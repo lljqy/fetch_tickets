@@ -185,19 +185,25 @@ class TicketProcessor:
         _time_print("成功选择席别")
 
     def _ensure_seat_position(self) -> None:
+
+        def _click_confirm_button():
+            while True:
+                self._driver.find_element(value="qr_submit_id").click()
+                if self._driver.current_url != self._conf.get('buy_url'):
+                    break
+
         self._driver.find_element(value="submitOrder_id").click()
-        time.sleep(self.MIDDLE_INTERVAL)
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
-            ec.presence_of_all_elements_located((By.ID, "qr_submit_id")))
+            ec.element_to_be_clickable((By.ID, "qr_submit_id")))
         _time_print("开始选座")
         if self._driver.find_element(by=By.XPATH, value="//*[@id='sy_ticket_num_id']/strong").text.strip() == '0':
-            self._driver.find_element(value="qr_submit_id").click()
+            _click_confirm_button()
         else:
             is_allowed_empty_seat = int(self._conf.get("no_seat_allow", '1')) == 1
             if is_allowed_empty_seat:
                 self._driver.find_element(value="back_edit_id").click()
             else:
-                self._driver.find_element(value="qr_submit_id").click()
+                _click_confirm_button()
         _time_print("成功选座")
         time.sleep(self.BIG_INTERVAL)
 
