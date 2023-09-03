@@ -199,6 +199,7 @@ class TicketProcessor:
             else:
                 self._driver.find_element(value="qr_submit_id").click()
         _time_print("成功选座")
+        time.sleep(self.BIG_INTERVAL)
 
     def _ensure(self) -> None:
         self._ensure_passengers()
