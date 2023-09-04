@@ -226,5 +226,6 @@ class TicketProcessor:
                 if self._driver.current_url.startswith(self._conf.get("pay_url")):
                     break
             except Exception as _:
+                _time_print(str(_))
                 time.sleep(self.BIG_INTERVAL)
         _time_print(f"订票成功，请在10分钟之内支付车票费用，支付网址：{self._conf.get('pay_url')}")
