@@ -8,6 +8,7 @@ from datetime import datetime
 from configparser import ConfigParser
 
 from selenium import webdriver
+from dateutil.parser import parse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
@@ -15,11 +16,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
 
-from .constants import CONF_ITEMS, TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP
+from .constants import CONF_ITEMS, TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, TIME_FORMAT
 
 
 def _time_print(msg: str) -> None:
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
+    print(f"[{datetime.now().strftime(TIME_FORMAT)}] {msg}")
 
 
 class TicketProcessor:
@@ -31,6 +32,7 @@ class TicketProcessor:
         4. 选择乘车人，确认订单
         5. 乘车人付款
     """
+
     DRIVER_MAP = {'chrome': webdriver.Chrome, 'firefox': webdriver.Firefox, 'safari': webdriver.safari,
                   'edge': webdriver.Edge}
     TIME_OUT = 600
@@ -91,7 +93,7 @@ class TicketProcessor:
             el.send_keys(Keys.ENTER)
         start_date_input = self._driver.find_element(value="train_date")
         start_date_input.clear()
-        start_date_input.send_keys(self._conf.get("start_date", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        start_date_input.send_keys(self._conf.get("start_date", datetime.now().strftime(TIME_FORMAT)))
 
     def _search(self) -> None:
         for train_type in re.split(self.SEP_PATTERN, self._conf.get("train_types", '')):
@@ -111,13 +113,30 @@ class TicketProcessor:
             _time_print("未指定发车时间, 默认00:00-24:00")
 
     def _pre_book(self, order: int = 0) -> None:
-        # 选择列出出发时间点
-        start_time_range = self._conf.get("start_time_range", "00:00--24:00")
-        if start_time_range:
-            ranges = self._driver.find_elements(value="cc_start_time")
-            for range_ in ranges:
-                range_dropdown = Select(range_)
-                range_dropdown.select_by_value(TIME_RANGE_MAP.get(start_time_range))
+        def _select_time() -> None:
+            # 选择列出出发时间点
+            start_time_range = self._conf.get("start_time_range", "00:00--24:00")
+            if start_time_range:
+                ranges = self._driver.find_elements(value="cc_start_time")
+                for range_ in ranges:
+                    range_dropdown = Select(range_)
+                    range_dropdown.select_by_value(TIME_RANGE_MAP.get(start_time_range))
+
+        _select_time()
+        wait_times = 0
+        # 等待1.2亿次大概需要1分钟
+        one_minute_times = 120000000
+        fetch_start_time = self._conf.get("fetch_start_time", datetime.now())
+        if fetch_start_time:
+            fetch_start_time = parse(fetch_start_time)
+            if datetime.now() < fetch_start_time:
+                _time_print(f"将在{fetch_start_time.strftime(TIME_FORMAT)}开启预订余票")
+            while datetime.now() < fetch_start_time:
+                wait_times += 1
+                # 每三分钟刷新一次页面，防止跳转到登录页面
+                if wait_times % (one_minute_times * 3) == 0:
+                    self._driver.refresh()
+                    _select_time()
         cnt = 0
         while self._driver.current_url == self._conf.get("ticket_url"):
             self._search()
@@ -186,11 +205,15 @@ class TicketProcessor:
 
     def _ensure_seat_position(self) -> None:
 
-        def _click_confirm_button():
+        def _click_confirm_button() -> None:
             while True:
-                self._driver.find_element(value="qr_submit_id").click()
-                if self._driver.current_url != self._conf.get('buy_url'):
-                    break
+                try:
+                    self._driver.find_element(value="qr_submit_id").click()
+                    if self._driver.current_url != self._conf.get('buy_url'):
+                        break
+                except Exception as _:
+                    if self._driver.current_url.startswith(self._conf.get('pay_url')):
+                        break
 
         self._driver.find_element(value="submitOrder_id").click()
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(

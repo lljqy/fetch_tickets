@@ -306,6 +306,7 @@ SITE_MAP = {'北京北': 'VAP', '北京东': 'BOP', '北京': 'BJP', '北京南'
 CONF_ITEMS = {
     "login": ("username", "password"),
     "cookie_info": ("from", "to", "start_date"),
+    "scheduler": ("fetch_start_time",),
     "order_item": ("order",),
     "user_info": ("users",),
     "train_info": ("train_types", "start_time_range"),
@@ -350,3 +351,4 @@ TIME_RANGE_MAP = {
     "12:00--18:00": "12001800",
     "18:00--24:00": "18002400",
 }
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
