@@ -1,13 +1,7 @@
 import re
-import sys
 import time
-import codecs
-from typing import Dict
-from pathlib import Path
 from datetime import datetime
-from configparser import ConfigParser
 
-from selenium import webdriver
 from dateutil.parser import parse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -16,14 +10,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
 
-from .constants import CONF_ITEMS, TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, TIME_FORMAT
+from utils.common import _time_print
+from core.base_processor import BaseProcessor
+from utils.constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, TIME_FORMAT
 
 
-def _time_print(msg: str) -> None:
-    print(f"[{datetime.now().strftime(TIME_FORMAT)}] {msg}")
-
-
-class TicketProcessor:
+class TicketProcessor(BaseProcessor):
     """
     处理流程：
         1. 读取配置文件, 设置关键参数
@@ -32,42 +24,8 @@ class TicketProcessor:
         4. 选择乘车人，确认订单
         5. 乘车人付款
     """
-
-    DRIVER_MAP = {'chrome': webdriver.Chrome, 'firefox': webdriver.Firefox, 'safari': webdriver.safari,
-                  'edge': webdriver.Edge}
-    TIME_OUT = 600
-    SMALL_INTERVAL = 0.05
-    MIDDLE_INTERVAL = 0.3
-    BIG_INTERVAL = 5
-    SEP_PATTERN = r'[,，]'
+    APP_NAME = "12306"
     PASSENGER_PATTERN = "//ul[@id='normal_passenger_id']/li/label"
-
-    def __init__(self) -> None:
-        self._load_driver_path()
-        self._conf = self._read_config()
-        self._driver = self.DRIVER_MAP.get(self._conf.get('driver_name'))()
-        self._driver.maximize_window()
-
-    @staticmethod
-    def _load_driver_path() -> None:
-        drivers_path = str(Path(__file__).absolute().parent.parent / "drivers")
-        sys.path.append(drivers_path)
-
-    def _read_config(self, config_file_path: str = "ticket.ini") -> Dict[str, str]:
-        _time_print("开始加载配置文件")
-        cp = ConfigParser()
-        try:
-            cp.read_file(codecs.open(config_file_path, 'r', 'utf-8-sig'))
-        except IOError as _:
-            config_file_name = Path(config_file_path).name
-            _time_print(f"打开配置文件失败{config_file_name}失败，请先创建一份{config_file_name}")
-            sys.exit()
-        config_dictionary = dict()
-        for title, infos in CONF_ITEMS.items():
-            for info in infos:
-                if cp.get(title, info).strip():
-                    config_dictionary.__setitem__(info.strip(), cp.get(title, info).strip())
-        return config_dictionary
 
     def _login(self) -> None:
         _time_print("开始登录")
@@ -77,6 +35,17 @@ class TicketProcessor:
         self._driver.find_element(value="J-password").send_keys(self._conf.get("password"))
         # 点击登录
         self._driver.find_element(value="J-login").click()
+        # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
+        # 填入身份证后四位
+        id_card_last_four_number = self._conf.get("id_card_last_four_number")
+        if not id_card_last_four_number:
+            id_card_last_four_number = input("请输入身份证后4位：")
+        time.sleep(self.MIDDLE_INTERVAL)
+        self._driver.find_element(value="id_card").send_keys(id_card_last_four_number)
+        self._driver.find_element(value="verification_code").click()
+        verification_code = input("请输入验证码：")
+        self._driver.find_element(value="code").send_keys(verification_code)
+        self._driver.find_element(value="sureClick").click()
         # 等待访问网页是否加载
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(ec.url_to_be(self._conf.get("init_url")))
         _time_print("登录成功")
@@ -126,7 +95,7 @@ class TicketProcessor:
         wait_times = 0
         # 等待1.2亿次大概需要1分钟
         one_minute_times = 120000000
-        fetch_start_time = self._conf.get("fetch_start_time", datetime.now())
+        fetch_start_time = self._conf.get("fetch_start_time")
         if fetch_start_time:
             fetch_start_time = parse(fetch_start_time)
             if datetime.now() < fetch_start_time:
@@ -136,6 +105,7 @@ class TicketProcessor:
                 # 每三分钟刷新一次页面，防止跳转到登录页面
                 if wait_times % (one_minute_times * 3) == 0:
                     self._driver.refresh()
+                    self._pre_start()
                     _select_time()
         cnt = 0
         while self._driver.current_url == self._conf.get("ticket_url"):
@@ -163,12 +133,6 @@ class TicketProcessor:
         _time_print("成功选择订票车次")
 
     def _ensure_passengers(self) -> None:
-        # 等待是否进入提交订单页面
-        # WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(ec.url_to_be(self._conf.get('buy_url')))
-        # 等待乘客按钮是否加载完毕
-
-        # WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
-        #     ec.presence_of_all_elements_located((By.XPATH, passenger_pattern)))
         _time_print("开始选择乘客")
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
         select_passengers = re.split(self.SEP_PATTERN, self._conf.get("users"))
