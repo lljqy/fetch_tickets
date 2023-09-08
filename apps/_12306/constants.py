@@ -302,19 +302,6 @@ SITE_MAP = {'北京北': 'VAP', '北京东': 'BOP', '北京': 'BJP', '北京南'
             '洋河': 'GTH', '永济北': 'AJV', '炎陵': 'YAG', '杨陵南': 'YEY', '永泰': 'YTS', '尤溪': 'YXS', '云霄': 'YBS', '宜兴': 'YUH',
             '应县': 'YZV', '攸县南': 'YXG', '余姚北': 'CTH', '诏安': 'ZDS', '正定机场': 'ZHP', '纸坊东': 'ZMN', '织金': 'IZW',
             '左岭': 'ZSN', '驻马店西': 'ZLN', '漳浦': 'ZCS', '庄桥': 'ZQH', '涿州东': 'ZAP', '卓资东': 'ZDC', '郑州东': 'ZAF'}
-# 配置文件动态加载项
-CONF_ITEMS = {
-    "12306": {"login": ("username", "password", "is_show_browser", "id_card_last_four_number"),
-              "cookie_info": ("from", "to", "start_date"),
-              "scheduler": ("fetch_start_time",),
-              "order_item": ("order",),
-              "user_info": ("users",),
-              "train_info": ("train_types", "start_time_range"),
-              "ticket_info": ("ticket_type",),
-              "confirm_info": ("seat_type", "no_seat_allow"),
-              "url_info": ("ticket_url", "login_url", "init_url", "buy_url", "pay_url"),
-              "path_info": ("driver_name",), }
-}
 # 车次类型
 TRAIN_TYPE_MAP = {
     'T': 'T-特快',
@@ -351,4 +338,3 @@ TIME_RANGE_MAP = {
     "12:00--18:00": "12001800",
     "18:00--24:00": "18002400",
 }
-TIME_FORMAT = "%Y-%m-%d %H:%M:%S"

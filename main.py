@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-BASE_DIR = str(Path(sys.argv[0]).parent)
+BASE_DIR = str(Path(sys.argv[0]).absolute().parent)
 sys.path.append(BASE_DIR)
 os.environ.setdefault('BASE_DIR', BASE_DIR)
 

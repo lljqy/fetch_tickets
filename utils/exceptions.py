@@ -2,5 +2,5 @@ class HasNotSpecifyAppNameError(Exception):
     pass
 
 
-class NotExistsAppName(Exception):
+class AppNameNotExistsError(Exception):
     pass

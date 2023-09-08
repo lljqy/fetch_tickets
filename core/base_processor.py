@@ -8,21 +8,13 @@ from abc import abstractmethod, ABCMeta
 
 from selenium import webdriver
 
-from utils.constants import CONF_ITEMS
 from utils.proxy_utils import ProxyHandler
+from configs.dictionaries import CONF_ITEMS
 from utils.common import _time_print, BASE_DIR
-from utils.exceptions import HasNotSpecifyAppNameError, NotExistsAppName
+from utils.exceptions import HasNotSpecifyAppNameError, AppNameNotExistsError
 
 
 class BaseProcessor(metaclass=ABCMeta):
-    """
-    处理流程：
-        1. 读取配置文件, 设置关键参数
-        2. 进入登录页面（需要验证码登录），登录成功
-        3. 进入火车票预订页面，选择火车信息
-        4. 选择乘车人，确认订单
-        5. 乘车人付款
-    """
     APP_NAME = None
     DRIVER_MAP = {
         'chrome': webdriver.Chrome,
@@ -90,7 +82,7 @@ class BaseProcessor(metaclass=ABCMeta):
             sys.exit()
         conf_item = CONF_ITEMS.get(self.APP_NAME)
         if not conf_item:
-            raise NotExistsAppName(f"`{self.APP_NAME}`不存在")
+            raise AppNameNotExistsError(f"`{self.APP_NAME}`不存在")
         config_dictionary = dict()
         for title, infos in conf_item.items():
             for info in infos:

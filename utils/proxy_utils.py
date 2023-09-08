@@ -36,4 +36,5 @@ class ProxyHandler:
                 url = f"http://{table_datas[index].text}:{table_datas[index + 1].text}"
                 results.add(url)
             time.sleep(self._wait_time)
+            page += 1
         return list(results)

@@ -1,8 +1,7 @@
 import os
 from datetime import datetime
 
-from .constants import TIME_FORMAT
-
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 BASE_DIR = os.environ.get('BASE_DIR')
 
 

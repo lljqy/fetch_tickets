@@ -10,9 +10,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
 
-from utils.common import _time_print
 from core.base_processor import BaseProcessor
-from utils.constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, TIME_FORMAT
+from utils.common import _time_print, TIME_FORMAT
+from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP
 
 
 class TicketProcessor(BaseProcessor):
@@ -41,10 +41,14 @@ class TicketProcessor(BaseProcessor):
         if not id_card_last_four_number:
             id_card_last_four_number = input("请输入身份证后4位：")
         time.sleep(self.MIDDLE_INTERVAL)
-        self._driver.find_element(value="id_card").send_keys(id_card_last_four_number)
+        id_card_input = self._driver.find_element(value="id_card")
+        id_card_input.clear()
+        id_card_input.send_keys(id_card_last_four_number)
         self._driver.find_element(value="verification_code").click()
         verification_code = input("请输入验证码：")
-        self._driver.find_element(value="code").send_keys(verification_code)
+        code_input = self._driver.find_element(value="code")
+        code_input.clear()
+        code_input.send_keys(verification_code)
         self._driver.find_element(value="sureClick").click()
         # 等待访问网页是否加载
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(ec.url_to_be(self._conf.get("init_url")))
