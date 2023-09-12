@@ -33,7 +33,9 @@ class BaseProcessor(metaclass=ABCMeta):
         self._conf = self._read_config()
         if set_proxy:
             self._proxies = ProxyHandler().get_latest_kdl_free_ips(limit=10, browser=self._conf.get('driver_name'))
-        options = self._get_selenium_config(set_proxy, is_show_browser=int(self._conf.get('is_show_browser', 0)))
+        else:
+            self._proxies = list()
+        options = self._get_selenium_config(is_show_browser=int(self._conf.get('is_show_browser', 0)))
         # 设置diver参数
         self._driver = self.DRIVER_MAP.get(self._conf.get('driver_name'))(options)
         browser = self._conf.get('driver_name', 'chrome')
@@ -50,7 +52,7 @@ class BaseProcessor(metaclass=ABCMeta):
         drivers_path = str(Path(sys.argv[0]).parent.parent / 'drivers')
         sys.path.append(drivers_path)
 
-    def _get_selenium_config(self, set_proxy: bool = False, is_show_browser: int = 0) -> webdriver.ChromeOptions:
+    def _get_selenium_config(self, is_show_browser: int = 0) -> webdriver.ChromeOptions:
         # 浏览器适配对象
         driver_name = self._conf.get("driver_name", "edge")
         options = getattr(webdriver, "ChromeOptions" if driver_name == "chrome" else "EdgeOptions")()
@@ -58,7 +60,7 @@ class BaseProcessor(metaclass=ABCMeta):
         if is_show_browser == 0:
             options.add_argument("--headless")
         # 设置代理
-        if set_proxy:
+        if self._proxies:
             options.add_argument(f"--proxy-server={secrets.choice(self._proxies)}")
         # 屏蔽'CHROME正受到组件控制'的提示
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
