@@ -7,6 +7,9 @@ from configparser import ConfigParser
 from abc import abstractmethod, ABCMeta
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support import expected_conditions as ec
 
 from utils.proxy_utils import ProxyHandler
 from configs.dictionaries import CONF_ITEMS
@@ -91,6 +94,18 @@ class BaseProcessor(metaclass=ABCMeta):
                 if cp.get(title, info).strip():
                     config_dictionary.__setitem__(info.strip(), cp.get(title, info).strip())
         return config_dictionary
+
+
+    def exists(self, by=By.ID, value: str = '') -> bool:
+        confirm_phone_func = ec.visibility_of_element_located((by, value))
+        try:
+            cb = confirm_phone_func(self._driver)
+            if cb:
+                cb.click()
+            return True
+        except NoSuchElementException as _:
+            pass
+        return False
 
     @abstractmethod
     def run(self) -> None:

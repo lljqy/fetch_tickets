@@ -7,8 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
 from core.base_processor import BaseProcessor
 from utils.common import _time_print, TIME_FORMAT
@@ -27,29 +27,38 @@ class TicketProcessor(BaseProcessor):
     APP_NAME = "12306"
     PASSENGER_PATTERN = "//ul[@id='normal_passenger_id']/li/label"
 
+
+
     def _login(self) -> None:
         _time_print("开始登录")
         self._driver.get(self._conf.get('login_url'))
         # 填写账号和密码
+        WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+            ec.presence_of_all_elements_located((By.ID, "J-userName")))
         self._driver.find_element(value="J-userName").send_keys(self._conf.get("username"))
         self._driver.find_element(value="J-password").send_keys(self._conf.get("password"))
         # 点击登录
         self._driver.find_element(value="J-login").click()
-        # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
-        # 填入身份证后四位
-        id_card_last_four_number = self._conf.get("id_card_last_four_number")
-        if not id_card_last_four_number:
-            id_card_last_four_number = input("请输入身份证后4位：")
-        time.sleep(self.MIDDLE_INTERVAL)
-        id_card_input = self._driver.find_element(value="id_card")
-        id_card_input.clear()
-        id_card_input.send_keys(id_card_last_four_number)
-        self._driver.find_element(value="verification_code").click()
-        verification_code = input("请输入验证码：")
-        code_input = self._driver.find_element(value="code")
-        code_input.clear()
-        code_input.send_keys(verification_code)
-        self._driver.find_element(value="sureClick").click()
+
+        try:
+            # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
+            # 填入身份证后四位
+            time.sleep(self.MIDDLE_INTERVAL)
+            id_card_input = self._driver.find_element(value="id_card")
+            id_card_input.clear()
+            id_card_last_four_number = self._conf.get("id_card_last_four_number")
+            if not id_card_last_four_number:
+                id_card_last_four_number = input("请输入身份证后4位：")
+            id_card_input.send_keys(id_card_last_four_number)
+            self._driver.find_element(value="verification_code").click()
+            verification_code = input("请输入验证码：")
+            code_input = self._driver.find_element(value="code")
+            code_input.clear()
+            code_input.send_keys(verification_code)
+            self._driver.find_element(value="sureClick").click()
+        except (NoSuchElementException, ElementNotInteractableException) as _:
+            # 代表此时不需要输入验证码
+            pass
         # 等待访问网页是否加载
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(ec.url_to_be(self._conf.get("init_url")))
         _time_print("登录成功")
@@ -141,8 +150,20 @@ class TicketProcessor(BaseProcessor):
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
         select_passengers = re.split(self.SEP_PATTERN, self._conf.get("users"))
         for passenger_label in passenger_labels:
-            if passenger_label.text in select_passengers:
+            if any(passenger_label.text.startswith(p) for p in select_passengers):
                 passenger_label.click()
+                retry_times = 0
+                # 学生票需要点击确认按钮
+                while self._conf.get("ticket_type", "成人票") == "学生票":
+                    try:
+                        confirm_student = ec.visibility_of_element_located((By.ID, "dialog_xsertcj_ok"))
+                        if confirm_student(self._driver):
+                            confirm_student(self._driver).click()
+                        break
+                    except NoSuchElementException as _:
+                        if retry_times > 100:
+                            break
+                        retry_times += 1
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
         confirm_phone_func = ec.visibility_of_element_located((By.ID, "qd_closeDefaultWarningWindowDialog_id"))
         try:
