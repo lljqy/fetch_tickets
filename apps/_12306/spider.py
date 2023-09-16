@@ -8,7 +8,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, \
+    StaleElementReferenceException
 
 from core.base_processor import BaseProcessor
 from utils.common import _time_print, TIME_FORMAT
@@ -26,8 +27,6 @@ class TicketProcessor(BaseProcessor):
     """
     APP_NAME = "12306"
     PASSENGER_PATTERN = "//ul[@id='normal_passenger_id']/li/label"
-
-
 
     def _login(self) -> None:
         _time_print("开始登录")
@@ -56,7 +55,7 @@ class TicketProcessor(BaseProcessor):
             code_input.clear()
             code_input.send_keys(verification_code)
             self._driver.find_element(value="sureClick").click()
-        except (NoSuchElementException, ElementNotInteractableException) as _:
+        except (NoSuchElementException, ElementNotInteractableException, StaleElementReferenceException) as _:
             # 代表此时不需要输入验证码
             pass
         # 等待访问网页是否加载
@@ -165,11 +164,7 @@ class TicketProcessor(BaseProcessor):
                             break
                         retry_times += 1
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
-        confirm_phone_func = ec.visibility_of_element_located((By.ID, "qd_closeDefaultWarningWindowDialog_id"))
-        try:
-            confirm_phone_func(self._driver).click()
-        except NoSuchElementException as _:
-            pass
+        self.exists(By.ID, "qd_closeDefaultWarningWindowDialog_id")
         _time_print("成功选择乘客")
 
     def _ensure_ticket_type(self) -> None:
