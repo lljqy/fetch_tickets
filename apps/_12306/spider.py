@@ -16,7 +16,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotInterac
 from utils.exceptions import ConfigError
 from core.base_processor import BaseProcessor
 from utils.common import _time_print, TIME_FORMAT, BASE_DIR
-from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULTS_CONF, REQUIRES
+from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULTS_CONF, REQUIRES, DEFAULT_VALUE
 
 
 class TicketProcessor(BaseProcessor):
@@ -92,7 +92,7 @@ class TicketProcessor(BaseProcessor):
         start_date_input.send_keys(self._conf.get("cookie_info.start_date", datetime.now().strftime(TIME_FORMAT)))
 
     def _search(self) -> None:
-        for train_type in re.split(self.SEP_PATTERN, self._conf.get("train_info.train_types")):
+        for train_type in re.split(self.SEP_PATTERN, self._conf.get("train_info.train_types", DEFAULT_VALUE)):
             train_type = train_type.strip()
             if train_type not in TRAIN_TYPE_MAP:
                 _time_print(f"车次类型异常或未选择!(train_type={train_type})")
@@ -146,8 +146,11 @@ class TicketProcessor(BaseProcessor):
                     time.sleep(self.MIDDLE_INTERVAL)
                 else:
                     for book_item in book_items:
-                        book_item.click()
-                        time.sleep(self.MIDDLE_INTERVAL)
+                        try:
+                            book_item.click()
+                            time.sleep(self.MIDDLE_INTERVAL)
+                        except Exception as _:
+                            pass
             except Exception as _:
                 _time_print("还没开始预订")
                 continue
@@ -199,7 +202,10 @@ class TicketProcessor(BaseProcessor):
             seats = self._driver.find_elements(by=By.XPATH, value="//select[starts-with(@id,'seatType')]")
             for seat in seats:
                 seat_type_dropdown = Select(seat)
-                seat_type_dropdown.select_by_value(SEAT_MAP.get(seat_type))
+                try:
+                    seat_type_dropdown.select_by_value(SEAT_MAP.get(seat_type))
+                except NoSuchElementException as _:
+                    continue
         _time_print("成功选择席别")
 
     def _ensure_seat_position(self) -> None:
@@ -235,19 +241,23 @@ class TicketProcessor(BaseProcessor):
         self._ensure_seat_type()
         self._ensure_seat_position()
 
-    def run(self) -> None:
+    def run(self, debug: bool = False) -> None:
         """
         如果最终没有到达支付页面，循环执行订票操作，直到订票成功为止
         :return:
         """
-        self._login()
-        while True:
-            try:
-                self._choose()
-                self._ensure()
-                if self._driver.current_url.startswith(self._conf.get("url_info.pay_url")):
-                    break
-            except Exception as _:
-                _time_print(str(_))
-                time.sleep(self.BIG_INTERVAL)
+        if debug:
+            self._login()
+            self._choose()
+            self._ensure()
+        else:
+            while True:
+                try:
+                    self._choose()
+                    self._ensure()
+                    if self._driver.current_url.startswith(self._conf.get("url_info.pay_url")):
+                        break
+                except Exception as _:
+                    _time_print(str(_))
+                    time.sleep(self.BIG_INTERVAL)
         _time_print(f"订票成功，请在10分钟之内支付车票费用，支付网址：{self._conf.get('url_info.pay_url')}")
