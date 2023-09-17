@@ -90,7 +90,13 @@ class BaseProcessor(metaclass=ABCMeta):
         return config_dictionary
 
 
-    def exists(self, by=By.ID, value: str = '') -> bool:
+    def compatible(self, by=By.ID, value: str = '') -> bool:
+        """
+        有些元素可能出现了，也有可能没有出现，兼容处理
+        :param by:
+        :param value:
+        :return:
+        """
         confirm = ec.visibility_of_element_located((by, value))
         try:
             cb = confirm(self._driver)

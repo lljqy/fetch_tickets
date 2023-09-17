@@ -16,7 +16,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotInterac
 from utils.exceptions import ConfigError
 from core.base_processor import BaseProcessor
 from utils.common import _time_print, TIME_FORMAT, BASE_DIR
-from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULT_VALUE, DEFAULTS_CONF, REQUIRES
+from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULTS_CONF, REQUIRES
 
 
 class TicketProcessor(BaseProcessor):
@@ -36,8 +36,8 @@ class TicketProcessor(BaseProcessor):
         for name, default_value in DEFAULTS_CONF.items():
             value = conf.get(name) or default_value
             if not value and name in REQUIRES:
-                f, s = name.split('-')
-                raise ConfigError(f"必须设置{f}.{s}的值")
+                _, s = name.split('.')
+                raise ConfigError(f"必须设置`{s}`的值")
             if value:
                 conf.__setitem__(name, value)
         return conf
@@ -179,7 +179,7 @@ class TicketProcessor(BaseProcessor):
                             break
                         retry_times += 1
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
-        self.exists(By.ID, "qd_closeDefaultWarningWindowDialog_id")
+        self.compatible(By.ID, "qd_closeDefaultWarningWindowDialog_id")
         _time_print("成功选择乘客")
 
     def _ensure_ticket_type(self) -> None:
