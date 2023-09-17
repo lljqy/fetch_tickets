@@ -4,3 +4,7 @@ class HasNotSpecifyAppNameError(Exception):
 
 class AppNameNotExistsError(Exception):
     pass
+
+
+class ConfigError(Exception):
+    pass

@@ -12,13 +12,11 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
 
 from utils.proxy_utils import ProxyHandler
-from configs.dictionaries import CONF_ITEMS
 from utils.common import _time_print, BASE_DIR
-from utils.exceptions import HasNotSpecifyAppNameError, AppNameNotExistsError
+
 
 
 class BaseProcessor(metaclass=ABCMeta):
-    APP_NAME = None
     DRIVER_MAP = {
         'chrome': webdriver.Chrome,
         'firefox': webdriver.Firefox,
@@ -35,13 +33,13 @@ class BaseProcessor(metaclass=ABCMeta):
         self._load_driver_path()
         self._conf = self._read_config()
         if set_proxy:
-            self._proxies = ProxyHandler().get_latest_kdl_free_ips(limit=10, browser=self._conf.get('driver_name'))
+            self._proxies = ProxyHandler().get_latest_kdl_free_ips(limit=10, browser=self._conf.get('path_info.driver_name', 'edga'))
         else:
             self._proxies = list()
-        options = self._get_selenium_config(is_show_browser=int(self._conf.get('is_show_browser', 0)))
+        options = self._get_selenium_config(is_show_browser=int(self._conf.get('login.is_show_browser', 0)))
         # 设置diver参数
-        self._driver = self.DRIVER_MAP.get(self._conf.get('driver_name'))(options)
-        browser = self._conf.get('driver_name', 'chrome')
+        self._driver = self.DRIVER_MAP.get(self._conf.get('path_info.driver_name'))(options)
+        browser = self._conf.get('path_info.driver_name', 'chrome')
         if browser == 'chrome':
             with open(Path(BASE_DIR) / 'libs' / stealth_file_name, mode='r', encoding='utf-8') as f:
                 # 移除selenium当中爬虫的特征
@@ -57,7 +55,7 @@ class BaseProcessor(metaclass=ABCMeta):
 
     def _get_selenium_config(self, is_show_browser: int = 0) -> webdriver.ChromeOptions:
         # 浏览器适配对象
-        driver_name = self._conf.get("driver_name", "edge")
+        driver_name = self._conf.get("path_info.driver_name", "edge")
         options = getattr(webdriver, "ChromeOptions" if driver_name == "chrome" else "EdgeOptions")()
         # 设置无头
         if is_show_browser == 0:
@@ -75,8 +73,6 @@ class BaseProcessor(metaclass=ABCMeta):
         return options
 
     def _read_config(self, config_file_path: str = str(Path(BASE_DIR) / "configs" / "12306.ini")) -> Dict[str, str]:
-        if not self.APP_NAME:
-            raise HasNotSpecifyAppNameError("没有指定`APP_NAME`")
         _time_print("开始加载配置文件")
         cp = ConfigParser()
         try:
@@ -85,21 +81,19 @@ class BaseProcessor(metaclass=ABCMeta):
             config_file_name = Path(config_file_path).name
             _time_print(f"打开配置文件失败{config_file_name}失败，请先创建一份{config_file_name}")
             sys.exit()
-        conf_item = CONF_ITEMS.get(self.APP_NAME)
-        if not conf_item:
-            raise AppNameNotExistsError(f"`{self.APP_NAME}`不存在")
         config_dictionary = dict()
-        for title, infos in conf_item.items():
-            for info in infos:
-                if cp.get(title, info).strip():
-                    config_dictionary.__setitem__(info.strip(), cp.get(title, info).strip())
+        for head, info_dict in cp.items():
+            for attr, value in info_dict.items():
+                value = value.strip()
+                if value:
+                    config_dictionary.__setitem__(f"{head}.{attr}", value)
         return config_dictionary
 
 
     def exists(self, by=By.ID, value: str = '') -> bool:
-        confirm_phone_func = ec.visibility_of_element_located((by, value))
+        confirm = ec.visibility_of_element_located((by, value))
         try:
-            cb = confirm_phone_func(self._driver)
+            cb = confirm(self._driver)
             if cb:
                 cb.click()
             return True

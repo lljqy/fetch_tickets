@@ -338,3 +338,45 @@ TIME_RANGE_MAP = {
     "12:00--18:00": "12001800",
     "18:00--24:00": "18002400",
 }
+# 默认的配置文件
+DEFAULT_VALUE = ''
+DEFAULTS_CONF = {
+    'login.username': DEFAULT_VALUE,
+    'login.password': DEFAULT_VALUE,
+    'login.id_card_last_four_number': DEFAULT_VALUE,
+    'login.is_show_browser': '0',
+
+    'cookie_info.from': DEFAULT_VALUE,
+    'cookie_info.to': DEFAULT_VALUE,
+    'cookie_info.start_date': DEFAULT_VALUE,
+
+    'scheduler.fetch_start_time': DEFAULT_VALUE,
+
+    ## order：车次，选择第几趟，0则从上至下依次点击，必选参数，如果要特定车次，需要先找到车次在列表中的次序，有效值如下：
+    #### 0->从上至下点击
+    #### 1->第一个车次
+    #### 2->第二个车次
+    'order_item.order': '0',
+
+    'user_info.users': DEFAULT_VALUE,
+
+    'train_info.train_types': 'D,G',
+    'train_info.start_time_range': '00:00--24:00',
+
+    'ticket_info.ticket_type': '成人票',
+
+    'confirm_info.seat_type': '二等座',
+    'confirm_info-no_seat_allow': '1',
+
+    'url_info.ticket_url': 'https://kyfw.12306.cn/otn/leftTicket/init',
+    'url_info.login_url': 'https://kyfw.12306.cn/otn/resources/login.html',
+    'url_info.init_url': 'https://kyfw.12306.cn/otn/view/index.html',
+    'url_info.buy_url': 'https://kyfw.12306.cn/otn/confirmPassenger/initDc',
+    'url_info.pay_url': 'https://kyfw.12306.cn/otn/payOrder/init',
+
+    'path_info.driver_name': 'edge',
+
+}
+# 必须设置的属性值
+REQUIRES = ['login.username', 'login.password', 'cookie_info.from', 'cookie_info.to', 'cookie_info.start_date',
+                'user_info.users']
