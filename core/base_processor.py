@@ -50,7 +50,7 @@ class BaseProcessor(metaclass=ABCMeta):
 
     @staticmethod
     def _load_driver_path() -> None:
-        drivers_path = str(Path(sys.argv[0]).parent.parent / 'drivers')
+        drivers_path = str(Path(sys.argv[0]).absolute().parent / 'drivers')
         sys.path.append(drivers_path)
 
     def _get_selenium_config(self, is_show_browser: int = 0) -> webdriver.ChromeOptions:

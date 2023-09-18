@@ -246,8 +246,8 @@ class TicketProcessor(BaseProcessor):
         如果最终没有到达支付页面，循环执行订票操作，直到订票成功为止
         :return:
         """
+        self._login()
         if debug:
-            self._login()
             self._choose()
             self._ensure()
         else:
