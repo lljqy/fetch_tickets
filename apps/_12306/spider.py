@@ -61,10 +61,10 @@ class TicketProcessor(BaseProcessor):
             id_card_input.clear()
             id_card_last_four_number = self._conf.get("login.id_card_last_four_number")
             if not id_card_last_four_number:
-                id_card_last_four_number = input("请输入身份证后4位：")
+                id_card_last_four_number = input("请输入身份证后4位：").strip()
             id_card_input.send_keys(id_card_last_four_number)
             self._driver.find_element(value="verification_code").click()
-            verification_code = input("请输入验证码：")
+            verification_code = input("请输入验证码：").strip()
             code_input = self._driver.find_element(value="code")
             code_input.clear()
             code_input.send_keys(verification_code)
