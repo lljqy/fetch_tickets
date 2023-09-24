@@ -2,14 +2,14 @@ import json
 from typing import Dict, List
 from datetime import datetime
 
-import execjs
 import requests
 import pandas as pd
 
 from utils.common import _time_print
+from core.base_processor import BaseCrawlPackageAPI
 
 
-class WYComment:
+class WYComment(BaseCrawlPackageAPI):
     cookies = {
         '__bid_n': '1838e6beb899881c564207',
         'FPTOKEN': 'hs+MOkdXwJzNFRH8z7k5zGBKGp7lG46J8GyM9oEztAe0pEe19J0v1EA74rR+oIN2pscTRWl/cCrHWI6F4+Q510EH1FrnE6ldnOjJ3SNZCC3hri/klD4SVS6DykxHoc6GVyZaUQzzbjG0ew7EvwTK0y23l4fk93UyGPPrNeOOLLPkK0G1tFsRQeISOyZ94VP3HTg3x5QzQk8lII7UiYIq3zGzE/dUFhh+JdZZdp11aaEVzjnv+l75ooXk3Se+PgKZ4xGGqum6uBPFySvjybQjglEqhMoEkPTSsW8JvLPw2fzJlDksNUZwobEstC7rMyQ7ke5BczW3TDyJLkALp44fnZJXM0p+/HuIL16CN8vJvUXDrwWwsX8+uW17JQp+b7+C48f5IJ7BzFVMogvamggzfA==|HuW4diam2WRui/pbbBdZGG8b/d147Ky8/wqpqi7NLQc=|10|8889f14ad98c29a8a3bd0b88b51a2798',
@@ -49,15 +49,6 @@ class WYComment:
     params = {
         'csrf_token': '',
     }
-    EMPTY = ''
-
-    def __init__(self, js_path: str) -> None:
-        self._js = self._get_js(js_path)
-
-    def _get_js(self, js_path: str) -> execjs.ExternalRuntime.Context:
-        with open(js_path, mode='r') as f:
-            js_code = execjs.compile(f.read())
-        return js_code
 
     def _encrypt(self, params: Dict[str, str]) -> Dict[str, str]:
         p1 = json.dumps(params, ensure_ascii=False)
@@ -69,15 +60,6 @@ class WYComment:
             'params': data['encText'],
             'encSecKey': data['encSecKey']
         }
-
-    def _deep_get(self, name: str, d: Dict) -> str:
-        ans = self.EMPTY
-        for k in name.split('.'):
-            d = d.get(k, dict())
-            if isinstance(d, dict) and not d:
-                return self.EMPTY
-            ans = d
-        return ans
 
     def _parse(self, comments: List[Dict]) -> pd.DataFrame:
         columns = ['ip_location', 'nick_name', 'content', 'user_avatar_url', 'time']
@@ -92,7 +74,10 @@ class WYComment:
         df_results.loc[:, 'time'] = df_results['time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
         return df_results
 
-    def parse_to_file(self) -> None:
+    def _save(self, df_result: pd.DataFrame) -> None:
+        df_result.drop_duplicates().to_excel('./data/周杰伦-网易评论.xlsx', index=False)
+
+    def parse(self) -> pd.DataFrame:
         _time_print("开始爬取")
         data = {"rid": "A_PL_0_11860849", "threadId": "A_PL_0_11860849", "pageNo": 1, "pageSize": 20,
                 "cursor": "-1", "offset": 0, "orderType": 1, "csrf_token": self.EMPTY}
@@ -128,9 +113,13 @@ class WYComment:
             cursor = d.get('cursor', comments[-1].get('time', '-1'))
             start += 1
         _time_print("结束爬取")
-        df_result.drop_duplicates().to_excel('./data/周杰伦-网易评论.xlsx', index=False)
+        return df_result
+
+    def run(self):
+        df_results = self.parse()
+        self._save(df_results)
 
 
 if __name__ == '__main__':
     wy = WYComment("./js/decrypt.js")
-    wy.parse_to_file()
+    wy.run()
