@@ -12,8 +12,8 @@ from lxml import etree
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 
-from utils.common import time_print
-from core.base_processor import BaseProcessor, BASE_DIR
+from utils.common import time_print, BASE_DIR
+from core.base_processor import BaseProcessor
 
 
 class QQProcessor(BaseProcessor):
@@ -64,19 +64,31 @@ class QQProcessor(BaseProcessor):
         self._gk = hashes & 0x7fffffff
 
     def _login(self) -> None:
+        cookies_path = Path(BASE_DIR) / 'apps' / 'qq' / 'preserve' / 'cookies.json'
         login_url = "https://i.qq.com/"
         self._driver.get(login_url)
-        self._driver.switch_to.frame('login_frame')
-        self._driver.find_element(value="switcher_plogin").click()
-        self._driver.find_element(value='u').send_keys(self._conf.get('login.username'))
-        # 等待访问网页是否加载
-        while self._driver.current_url == login_url:
-            continue
-        # 切换到目标网址
+        if cookies_path.exists():
+            self.add_cookies(str(cookies_path))
         self._driver.get(self._target_url)
-        # 等待访问网页是否加载
-        WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
-            ec.url_to_be(self._target_url))
+        if self._driver.current_url != self._target_url:
+            self._driver.get(login_url)
+            self._driver.switch_to.frame('login_frame')
+            self._driver.find_element(value="switcher_plogin").click()
+            self._driver.find_element(value='u').send_keys(self._conf.get('login.username'))
+            # 等待访问网页是否加载
+            while self._driver.current_url == login_url:
+                continue
+            # 切换到目标网址
+            self._driver.get(self._target_url)
+            # 等待访问网页是否加载
+            WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+                ec.url_to_be(self._target_url))
+            cookies = self._driver.get_cookies()
+            for cookie in cookies:
+                # 修改domain防止再次登录的时候报错
+                cookie.__setitem__('domain', '.qq.com')
+                cookie.pop('sameSite', '')
+            self.save_cookies(cookies, str(cookies_path))
         self._set_cookies()
         self._set_gk()
         time_print("登录成功")
@@ -163,7 +175,7 @@ class QQProcessor(BaseProcessor):
     def _save(self, path: Path = Path(BASE_DIR) / 'apps' / 'qq' / 'data' / '合工大QQ空间说说.xlsx'):
         self._df_result.to_excel(str(path), index=False)
 
-    def run(self, debug=False) -> None:
+    def run(self, debug: bool = False) -> None:
         self._login()
         self._crawl()
         self._save()

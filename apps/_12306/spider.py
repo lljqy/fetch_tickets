@@ -31,6 +31,14 @@ class TicketProcessor(BaseProcessor):
     APP_NAME = "12306"
     PASSENGER_PATTERN = "//ul[@id='normal_passenger_id']/li/label"
 
+    def __init__(self, stealth_file_name: str = 'stealth.min.js', set_proxy: bool = False):
+        super().__init__(stealth_file_name, set_proxy)
+        self._cookies = dict()
+
+    def _set_cookies(self) -> None:
+        for elem in self._driver.get_cookies():
+            self._cookies.__setitem__(elem['name'], elem['value'])
+
     def _read_config(self, config_file_path: str = str(Path(BASE_DIR) / "configs" / "12306.ini")) -> Dict[str, str]:
         conf = super()._read_config(config_file_path)
         for name, default_value in DEFAULTS_CONF.items():
@@ -211,6 +219,7 @@ class TicketProcessor(BaseProcessor):
     def _ensure_seat_position(self) -> None:
 
         def _click_confirm_button() -> None:
+            start = time.perf_counter()
             while True:
                 try:
                     self._driver.find_element(value="qr_submit_id").click()
@@ -219,9 +228,12 @@ class TicketProcessor(BaseProcessor):
                 except Exception as _:
                     if self._driver.current_url.startswith(self._conf.get('url_info.pay_url')):
                         break
+                if time.perf_counter() - start > self.TIME_OUT:
+                    time_print("抢票过程中出现异常, 马上开始重新抢票")
+                    RuntimeError("抢票过程中出现异常, 马上开始重新抢票")
 
         self._driver.find_element(value="submitOrder_id").click()
-        WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+        WebDriverWait(timeout=self.BIG_INTERVAL, driver=self._driver).until(
             ec.element_to_be_clickable((By.ID, "qr_submit_id")))
         time_print("开始选座")
         if self._driver.find_element(by=By.XPATH, value="//*[@id='sy_ticket_num_id']/strong").text.strip() != '0':
@@ -231,7 +243,8 @@ class TicketProcessor(BaseProcessor):
             if is_allowed_empty_seat:
                 _click_confirm_button()
             else:
-                self._driver.find_element(value="back_edit_id").click()
+                time_print("没有座位啦, 只剩下无座, 稍等片刻...")
+                RuntimeError("没有座位啦, 只剩下无座, 稍等片刻...")
         time_print("成功选座")
         time.sleep(self.BIG_INTERVAL)
 

@@ -1,8 +1,9 @@
+import json
 import sys
 import codecs
 import secrets
-from typing import Dict
 from pathlib import Path
+from typing import List, Dict
 from configparser import ConfigParser
 from abc import abstractmethod, ABCMeta
 
@@ -91,6 +92,24 @@ class BaseProcessor(metaclass=ABCMeta):
                 if value:
                     config_dictionary.__setitem__(f"{head}.{attr}", value)
         return config_dictionary
+
+    @staticmethod
+    def save_cookies(cookies: List[Dict], path: str) -> None:
+        with open(path, 'w', encoding='utf-8-sig') as f:
+            f.write(json.dumps(cookies, ensure_ascii=False))
+
+    @staticmethod
+    def load_cookies(path: str) -> List[Dict[str, str]]:
+        with open(path, 'r', encoding='utf-8-sig') as f:
+            cookies = json.load(f)
+        return cookies
+
+    def add_cookies(self, path: str) -> None:
+        cookies = self.load_cookies(path)
+        for cookie in cookies:
+            self._driver.add_cookie(cookie)
+            # for k, v in cookie.items():
+            #     self._driver.add_cookie({'name': k, 'value': v})
 
     def compatible(self, by=By.ID, value: str = '') -> bool:
         """
