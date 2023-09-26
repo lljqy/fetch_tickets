@@ -5,11 +5,14 @@ from datetime import datetime
 import requests
 import pandas as pd
 
-from utils.common import _time_print
-from core.base_processor import BaseCrawlPackageAPI
+from utils.common import time_print
+from core.base_processor import BaseCrawlPackageProcessor
 
 
-class WYComment(BaseCrawlPackageAPI):
+class WYComment(BaseCrawlPackageProcessor):
+    """
+    抓取网易歌曲评论
+    """
     cookies = {
         '__bid_n': '1838e6beb899881c564207',
         'FPTOKEN': 'hs+MOkdXwJzNFRH8z7k5zGBKGp7lG46J8GyM9oEztAe0pEe19J0v1EA74rR+oIN2pscTRWl/cCrHWI6F4+Q510EH1FrnE6ldnOjJ3SNZCC3hri/klD4SVS6DykxHoc6GVyZaUQzzbjG0ew7EvwTK0y23l4fk93UyGPPrNeOOLLPkK0G1tFsRQeISOyZ94VP3HTg3x5QzQk8lII7UiYIq3zGzE/dUFhh+JdZZdp11aaEVzjnv+l75ooXk3Se+PgKZ4xGGqum6uBPFySvjybQjglEqhMoEkPTSsW8JvLPw2fzJlDksNUZwobEstC7rMyQ7ke5BczW3TDyJLkALp44fnZJXM0p+/HuIL16CN8vJvUXDrwWwsX8+uW17JQp+b7+C48f5IJ7BzFVMogvamggzfA==|HuW4diam2WRui/pbbBdZGG8b/d147Ky8/wqpqi7NLQc=|10|8889f14ad98c29a8a3bd0b88b51a2798',
@@ -68,7 +71,7 @@ class WYComment(BaseCrawlPackageAPI):
         for comment in comments:
             cur = dict()
             for index, column in enumerate(columns):
-                cur[column] = self._deep_get(raws[index], comment)
+                cur[column] = self.deep_get(raws[index], comment)
             ans.append(cur)
         df_results = pd.DataFrame(ans, columns=columns)
         df_results.loc[:, 'time'] = df_results['time'].apply(lambda x: datetime.fromtimestamp(x / 1000))
@@ -78,7 +81,7 @@ class WYComment(BaseCrawlPackageAPI):
         df_result.drop_duplicates().to_excel('./data/周杰伦-网易评论.xlsx', index=False)
 
     def parse(self) -> pd.DataFrame:
-        _time_print("开始爬取")
+        time_print("开始爬取")
         data = {"rid": "A_PL_0_11860849", "threadId": "A_PL_0_11860849", "pageNo": 1, "pageSize": 20,
                 "cursor": "-1", "offset": 0, "orderType": 1, "csrf_token": self.EMPTY}
         cursor = -1
@@ -106,13 +109,13 @@ class WYComment(BaseCrawlPackageAPI):
             comments = d.get('comments', list())
             counts = df_result.shape[0]
             if not comments and total > 0 and counts >= total:
-                _time_print(f"第{start}页有重复的, {counts}行")
+                time_print(f"第{start}页有重复的, {counts}行")
                 break
             df_comments = self._parse(comments)
             df_result = pd.concat([df_result, df_comments]).drop_duplicates()
             cursor = d.get('cursor', comments[-1].get('time', '-1'))
             start += 1
-        _time_print("结束爬取")
+        time_print("结束爬取")
         return df_result
 
     def run(self):

@@ -15,7 +15,7 @@ from selenium.common.exceptions import NoSuchElementException, ElementNotInterac
 
 from utils.exceptions import ConfigError
 from core.base_processor import BaseProcessor
-from utils.common import _time_print, TIME_FORMAT, BASE_DIR
+from utils.common import time_print, TIME_FORMAT, BASE_DIR
 from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULTS_CONF, REQUIRES, DEFAULT_VALUE
 
 
@@ -43,7 +43,7 @@ class TicketProcessor(BaseProcessor):
         return conf
 
     def _login(self) -> None:
-        _time_print("开始登录")
+        time_print("开始登录")
         self._driver.get(self._conf.get('url_info.login_url'))
         # 填写账号和密码
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
@@ -75,7 +75,7 @@ class TicketProcessor(BaseProcessor):
         # 等待访问网页是否加载
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
             ec.url_to_be(self._conf.get("url_info.init_url")))
-        _time_print("登录成功")
+        time_print("登录成功")
 
     def _pre_start(self) -> None:
         """
@@ -95,7 +95,7 @@ class TicketProcessor(BaseProcessor):
         for train_type in re.split(self.SEP_PATTERN, self._conf.get("train_info.train_types", DEFAULT_VALUE)):
             train_type = train_type.strip()
             if train_type not in TRAIN_TYPE_MAP:
-                _time_print(f"车次类型异常或未选择!(train_type={train_type})")
+                time_print(f"车次类型异常或未选择!(train_type={train_type})")
             else:
                 self._driver.find_element(by=By.XPATH,
                                           value=f"//label[text()='{TRAIN_TYPE_MAP.get(train_type)}']").click()
@@ -106,7 +106,7 @@ class TicketProcessor(BaseProcessor):
             WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
                 ec.presence_of_all_elements_located((By.XPATH, "//tbody[@id='queryLeftTable']/tr")))
         else:
-            _time_print("未指定发车时间, 默认00:00-24:00")
+            time_print("未指定发车时间, 默认00:00-24:00")
 
     def _pre_book(self, order: int = 0) -> None:
         def _select_time() -> None:
@@ -126,7 +126,7 @@ class TicketProcessor(BaseProcessor):
         if fetch_start_time:
             fetch_start_time = parse(fetch_start_time)
             if datetime.now() < fetch_start_time:
-                _time_print(f"将在{fetch_start_time.strftime(TIME_FORMAT)}开启预订余票")
+                time_print(f"将在{fetch_start_time.strftime(TIME_FORMAT)}开启预订余票")
             while datetime.now() < fetch_start_time:
                 wait_times += 1
                 # 每三分钟刷新一次页面，防止跳转到登录页面
@@ -138,7 +138,7 @@ class TicketProcessor(BaseProcessor):
         while self._driver.current_url == self._conf.get("url_info.ticket_url"):
             self._search()
             cnt += 1
-            _time_print(f"持续抢票...第{cnt}次")
+            time_print(f"持续抢票...第{cnt}次")
             try:
                 book_items = self._driver.find_elements(by=By.XPATH, value="//a[text()='预订']")
                 if order > 0:
@@ -152,18 +152,18 @@ class TicketProcessor(BaseProcessor):
                         except Exception as _:
                             pass
             except Exception as _:
-                _time_print("还没开始预订")
+                time_print("还没开始预订")
                 continue
 
     def _choose(self) -> None:
-        _time_print("开始预订票")
+        time_print("开始预订票")
         self._driver.get(self._conf.get("url_info.ticket_url"))
         self._pre_start()
         self._pre_book(int(self._conf.get('order_item.order')))
-        _time_print("成功选择订票车次")
+        time_print("成功选择订票车次")
 
     def _ensure_passengers(self) -> None:
-        _time_print("开始选择乘客")
+        time_print("开始选择乘客")
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
         select_passengers = re.split(self.SEP_PATTERN, self._conf.get("user_info.users"))
         for passenger_label in passenger_labels:
@@ -183,20 +183,20 @@ class TicketProcessor(BaseProcessor):
                         retry_times += 1
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
         self.compatible(By.ID, "qd_closeDefaultWarningWindowDialog_id")
-        _time_print("成功选择乘客")
+        time_print("成功选择乘客")
 
     def _ensure_ticket_type(self) -> None:
-        _time_print("开始选择票种")
+        time_print("开始选择票种")
         ticket_type = self._conf.get("ticket_info.ticket_type")
         if ticket_type:
             tickets = self._driver.find_elements(by=By.XPATH, value="//select[starts-with(@id,'ticketType')]")
             for ticket in tickets:
                 ticket_type_dropdown = Select(ticket)
                 ticket_type_dropdown.select_by_value(TICKET_MAP.get(ticket_type))
-        _time_print("票种选择成功")
+        time_print("票种选择成功")
 
     def _ensure_seat_type(self) -> None:
-        _time_print("开始选择席别")
+        time_print("开始选择席别")
         seat_type = self._conf.get("confirm_info.seat_type")
         if seat_type:
             seats = self._driver.find_elements(by=By.XPATH, value="//select[starts-with(@id,'seatType')]")
@@ -206,7 +206,7 @@ class TicketProcessor(BaseProcessor):
                     seat_type_dropdown.select_by_value(SEAT_MAP.get(seat_type))
                 except NoSuchElementException as _:
                     continue
-        _time_print("成功选择席别")
+        time_print("成功选择席别")
 
     def _ensure_seat_position(self) -> None:
 
@@ -223,7 +223,7 @@ class TicketProcessor(BaseProcessor):
         self._driver.find_element(value="submitOrder_id").click()
         WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
             ec.element_to_be_clickable((By.ID, "qr_submit_id")))
-        _time_print("开始选座")
+        time_print("开始选座")
         if self._driver.find_element(by=By.XPATH, value="//*[@id='sy_ticket_num_id']/strong").text.strip() != '0':
             _click_confirm_button()
         else:
@@ -232,7 +232,7 @@ class TicketProcessor(BaseProcessor):
                 _click_confirm_button()
             else:
                 self._driver.find_element(value="back_edit_id").click()
-        _time_print("成功选座")
+        time_print("成功选座")
         time.sleep(self.BIG_INTERVAL)
 
     def _ensure(self) -> None:
@@ -258,6 +258,6 @@ class TicketProcessor(BaseProcessor):
                     if self._driver.current_url.startswith(self._conf.get("url_info.pay_url")):
                         break
                 except Exception as _:
-                    _time_print(str(_))
+                    time_print(str(_))
                     time.sleep(self.BIG_INTERVAL)
-        _time_print(f"订票成功，请在10分钟之内支付车票费用，支付网址：{self._conf.get('url_info.pay_url')}")
+        time_print(f"订票成功，请在10分钟之内支付车票费用，支付网址：{self._conf.get('url_info.pay_url')}")

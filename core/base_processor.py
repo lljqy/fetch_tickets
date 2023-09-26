@@ -13,10 +13,11 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
 
 from utils.proxy_utils import ProxyHandler
-from utils.common import _time_print, BASE_DIR
+from utils.common import time_print, BASE_DIR
 
 
 class BaseProcessor(metaclass=ABCMeta):
+    EMPTY = ''
     DRIVER_MAP = {
         'chrome': webdriver.Chrome,
         'firefox': webdriver.Firefox,
@@ -75,13 +76,13 @@ class BaseProcessor(metaclass=ABCMeta):
         return options
 
     def _read_config(self, config_file_path: str = str(Path(BASE_DIR) / "configs" / "12306.ini")) -> Dict[str, str]:
-        _time_print("开始加载配置文件")
+        time_print("开始加载配置文件")
         cp = ConfigParser()
         try:
             cp.read_file(codecs.open(config_file_path, 'r', 'utf-8-sig'))
         except IOError as _:
             config_file_name = Path(config_file_path).name
-            _time_print(f"打开配置文件失败{config_file_name}失败，请先创建一份{config_file_name}")
+            time_print(f"打开配置文件失败{config_file_name}失败，请先创建一份{config_file_name}")
             sys.exit()
         config_dictionary = dict()
         for head, info_dict in cp.items():
@@ -116,7 +117,7 @@ class BaseProcessor(metaclass=ABCMeta):
         """
 
 
-class BaseCrawlPackageAPI:
+class BaseCrawlPackageProcessor:
     EMPTY = ''
 
     def __init__(self, js_path: str) -> None:

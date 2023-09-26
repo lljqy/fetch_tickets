@@ -5,7 +5,7 @@ from secrets import choice
 import requests
 import pandas as pd
 
-from utils.common import _time_print
+from utils.common import time_print
 from apps._1688.constants import districts
 
 
@@ -125,11 +125,11 @@ class T1688Processor:
                             except Exception as _:
                                 print(_)
                             self.results.append(cur)
-                        _time_print(f"{province}-{city}:{begin_page}, 爬取完毕")
+                        time_print(f"{province}-{city}:{begin_page}, 爬取完毕")
                         begin_page += 1
                         time.sleep(choice((1, 2)))
                     except Exception as _:
-                        _time_print(f'{province}-{city}:{begin_page}，爬取停止，{_}')
+                        time_print(f'{province}-{city}:{begin_page}，爬取停止，{_}')
                         break
 
     def _clean(self) -> None:
