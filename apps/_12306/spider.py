@@ -52,7 +52,7 @@ class TicketProcessor(BaseProcessor):
 
     def _login(self) -> None:
         time_print("开始登录")
-        cookies_path = Path(BASE_DIR) / 'apps' / 'qq' / 'preserve' / 'cookies.json'
+        cookies_path = Path(BASE_DIR) / 'apps' / '_12306' / 'preserve' / 'cookies.json'
         self._driver.get(self._conf.get('url_info.login_url'))
         if cookies_path.exists():
             self.add_cookies(str(cookies_path))
