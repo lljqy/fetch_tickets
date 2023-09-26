@@ -52,37 +52,47 @@ class TicketProcessor(BaseProcessor):
 
     def _login(self) -> None:
         time_print("开始登录")
+        cookies_path = Path(BASE_DIR) / 'apps' / 'qq' / 'preserve' / 'cookies.json'
         self._driver.get(self._conf.get('url_info.login_url'))
-        # 填写账号和密码
-        WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
-            ec.presence_of_all_elements_located((By.ID, "J-userName")))
-        self._driver.find_element(value="J-userName").send_keys(self._conf.get("login.username"))
-        self._driver.find_element(value="J-password").send_keys(self._conf.get("login.password"))
-        # 点击登录
-        self._driver.find_element(value="J-login").click()
+        if cookies_path.exists():
+            self.add_cookies(str(cookies_path))
+        self._driver.get(self._conf.get('url_info.init_url'))
+        if not self._driver.current_url.startswith(self._conf.get('url_info.init_url')):
+            # 填写账号和密码
+            WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+                ec.presence_of_all_elements_located((By.ID, "J-userName")))
+            self._driver.find_element(value="J-userName").send_keys(self._conf.get("login.username"))
+            self._driver.find_element(value="J-password").send_keys(self._conf.get("login.password"))
+            # 点击登录
+            self._driver.find_element(value="J-login").click()
 
-        try:
-            # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
-            # 填入身份证后四位
-            time.sleep(self.MIDDLE_INTERVAL)
-            id_card_input = self._driver.find_element(value="id_card")
-            id_card_input.clear()
-            id_card_last_four_number = self._conf.get("login.id_card_last_four_number")
-            if not id_card_last_four_number:
-                id_card_last_four_number = input("请输入身份证后4位：").strip()
-            id_card_input.send_keys(id_card_last_four_number)
-            self._driver.find_element(value="verification_code").click()
-            verification_code = input("请输入验证码：").strip()
-            code_input = self._driver.find_element(value="code")
-            code_input.clear()
-            code_input.send_keys(verification_code)
-            self._driver.find_element(value="sureClick").click()
-        except (NoSuchElementException, ElementNotInteractableException, StaleElementReferenceException) as _:
-            # 代表此时不需要输入验证码
-            pass
-        # 等待访问网页是否加载
-        WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
-            ec.url_to_be(self._conf.get("url_info.init_url")))
+            try:
+                # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
+                # 填入身份证后四位
+                time.sleep(self.MIDDLE_INTERVAL)
+                id_card_input = self._driver.find_element(value="id_card")
+                id_card_input.clear()
+                id_card_last_four_number = self._conf.get("login.id_card_last_four_number")
+                if not id_card_last_four_number:
+                    id_card_last_four_number = input("请输入身份证后4位：").strip()
+                id_card_input.send_keys(id_card_last_four_number)
+                self._driver.find_element(value="verification_code").click()
+                verification_code = input("请输入验证码：").strip()
+                code_input = self._driver.find_element(value="code")
+                code_input.clear()
+                code_input.send_keys(verification_code)
+                self._driver.find_element(value="sureClick").click()
+            except (NoSuchElementException, ElementNotInteractableException, StaleElementReferenceException) as _:
+                # 代表此时不需要输入验证码
+                pass
+            # 等待访问网页是否加载
+            WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+                ec.url_to_be(self._conf.get("url_info.init_url")))
+            cookies = self._driver.get_cookies()
+            for cookie in cookies:
+                # 修改domain防止再次登录的时候报错
+                cookie.__setitem__('domain', '.12306.cn')
+            self.save_cookies(cookies, str(cookies_path))
         time_print("登录成功")
 
     def _pre_start(self) -> None:
