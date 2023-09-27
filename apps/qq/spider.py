@@ -65,14 +65,15 @@ class QQProcessor(BaseProcessor):
 
     def _login(self) -> None:
         cookies_dir = Path(BASE_DIR) / 'apps' / 'qq' / 'preserve'
+        cookies_dir.mkdir(exist_ok=True)
+        cookies_file_path = cookies_dir / 'cookies.json'
         login_url = "https://i.qq.com/"
         self._driver.get(login_url)
-        if cookies_dir.exists():
-            self.add_cookies(str(cookies_dir / 'cookies.json'))
-        else:
-            cookies_dir.mkdir(exist_ok=True)
+        if cookies_file_path.exists():
+            self.add_cookies(str(cookies_file_path))
         self._driver.get(self._target_url)
         if self._driver.current_url != self._target_url:
+            self._driver.delete_all_cookies()
             self._driver.get(login_url)
             self._driver.switch_to.frame('login_frame')
             self._driver.find_element(value="switcher_plogin").click()
@@ -89,8 +90,8 @@ class QQProcessor(BaseProcessor):
             for cookie in cookies:
                 # 修改domain防止再次登录的时候报错
                 cookie.__setitem__('domain', '.qq.com')
-                cookie.pop('sameSite', '')
-            self.save_cookies(cookies, str(cookies_dir / 'cookies.json'))
+                cookie.pop('sameSite', self.EMPTY)
+            self.save_cookies(cookies, str(cookies_file_path))
         self._set_cookies()
         self._set_gk()
         time_print("登录成功")
