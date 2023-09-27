@@ -52,10 +52,12 @@ class TicketProcessor(BaseProcessor):
 
     def _login(self) -> None:
         time_print("开始登录")
-        cookies_path = Path(BASE_DIR) / 'apps' / '_12306' / 'preserve' / 'cookies.json'
+        cookies_dir = Path(BASE_DIR) / 'apps' / '_12306' / 'preserve'
         self._driver.get(self._conf.get('url_info.login_url'))
-        if cookies_path.exists():
-            self.add_cookies(str(cookies_path))
+        if cookies_dir.exists():
+            self.add_cookies(str(cookies_dir / 'cookies.json'))
+        else:
+            cookies_dir.mkdir(exist_ok=True)
         self._driver.get(self._conf.get('url_info.init_url'))
         if not self._driver.current_url.startswith(self._conf.get('url_info.init_url')):
             # 填写账号和密码
@@ -92,7 +94,7 @@ class TicketProcessor(BaseProcessor):
             for cookie in cookies:
                 # 修改domain防止再次登录的时候报错
                 cookie.__setitem__('domain', '.12306.cn')
-            self.save_cookies(cookies, str(cookies_path))
+            self.save_cookies(cookies, str(cookies_dir / 'cookies.json'))
         time_print("登录成功")
 
     def _pre_start(self) -> None:
