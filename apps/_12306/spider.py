@@ -108,7 +108,8 @@ class TicketProcessor(BaseProcessor):
             el = self._driver.find_element(value=f"{des}StationText")
             el.click()
             el.send_keys(self._conf.get(f"cookie_info.{des}"))
-            el.send_keys(Keys.ENTER)
+            self._driver.find_element(by=By.XPATH, value="//div[@id='panel_cities']/div/span[text()='{place}']".format(
+                place=self._conf.get(f"cookie_info.{des}"))).click()
         start_date_input = self._driver.find_element(value="train_date")
         start_date_input.clear()
         start_date_input.send_keys(self._conf.get("cookie_info.start_date", datetime.now().strftime(TIME_FORMAT)))
