@@ -1,5 +1,5 @@
-import json
 import sys
+import json
 import codecs
 import secrets
 from pathlib import Path
@@ -108,8 +108,6 @@ class BaseProcessor(metaclass=ABCMeta):
         cookies = self.load_cookies(path)
         for cookie in cookies:
             self._driver.add_cookie(cookie)
-            # for k, v in cookie.items():
-            #     self._driver.add_cookie({'name': k, 'value': v})
 
     def compatible(self, by=By.ID, value: str = '') -> bool:
         """

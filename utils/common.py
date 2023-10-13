@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-BASE_DIR = os.environ.get('BASE_DIR')
+BASE_DIR = os.environ.get('BASE_DIR', '')
 
 
 def time_print(msg: str) -> None:
