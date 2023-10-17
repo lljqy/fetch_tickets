@@ -172,7 +172,10 @@ class CTripProcessor(BaseCrawlPackageProcessor):
 
             self._page.set_default_timeout(0)
             self._page.route("**/*.js", handle_js)
-            self._page.goto("https://hotels.ctrip.com/hotels/list?countryId=1&city=1&checkin=2023/10/12&checkout=2023/10/13&optionId=1&optionType=City&directSearch=0&display=%E5%8C%97%E4%BA%AC&crn=1&adult=1&children=0&searchBoxArg=t&travelPurpose=0&ctm_ref=ix_sb_dl&domestic=1&")
+            self._page.goto("https://hotels.ctrip.com/hotels/list?countryId=1&city=2&checkin=2023/10/13&checkout=2023/10/14&optionId=2&optionType=City&directSearch=0&display=%E4%B8%8A%E6%B5%B7&crn=1&adult=1&children=0&searchBoxArg=t&travelPurpose=0&ctm_ref=ix_sb_dl&domestic=1&")
+            self._page.locator(
+                selector="#ibu_hotel_container > div > div.list-search-container > ul > li.list-item.list-btn > button"
+            ).click()
             # 保存cookies
             self.save_cookies(context.cookies(), str(cookies_file_path))
 

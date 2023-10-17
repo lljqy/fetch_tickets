@@ -2,10 +2,14 @@ import sys
 import json
 import codecs
 import secrets
+import subprocess
 from pathlib import Path
+from functools import partial
 from typing import List, Dict
 from configparser import ConfigParser
 from abc import abstractmethod, ABCMeta
+
+subprocess.Popen = partial(subprocess.Popen, encoding='utf-8-sig')
 
 import execjs
 from selenium import webdriver
