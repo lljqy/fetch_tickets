@@ -1,12 +1,23 @@
+import sys
+import json
 import time
 import secrets
-from typing import Dict, List
+import binascii
+from pathlib import Path
 from datetime import datetime
+from typing import Dict, List
 from dataclasses import dataclass
 
 import requests
 import pandas as pd
+from Crypto.Cipher import AES
+from selenium import webdriver
+from Crypto.Util import Padding
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
 
+from utils.wechat import Wechat
+from utils.proxy_utils import ProxyHandler
 from utils.common import TIME_FORMAT, time_print
 from core.base_processor import BaseCrawlPackageProcessor
 
@@ -65,10 +76,59 @@ class JZSC(BaseCrawlPackageProcessor):
     ERROR_REGION_ID = "-100"
     ERROR_QY_TYPE = "-101"
     ERROR_APT_CODE = "XXX"
+    _ROOT_PATH = Path(sys.argv[0]).parent / 'data'
+    _ROOT_PATH.mkdir(exist_ok=True)
 
-    def __init__(self, js_path: str) -> None:
+    def __init__(self, js_path: str = None) -> None:
         super().__init__(js_path)
         self._df_results = pd.DataFrame()
+        self._df_detail_results = pd.DataFrame()
+        self._cookie = None
+        self._ips = ProxyHandler().get_latest_kdl_free_ips()
+        # self.refresh_cookie()
+
+    @staticmethod
+    def _get_selenium_config() -> webdriver.ChromeOptions:
+        # 浏览器适配对象
+        options = webdriver.EdgeOptions()
+        # 设置无头
+        options.add_argument("--headless")
+        # 设置代理，后续完成
+        # 屏蔽'CHROME正受到组件控制'的提示
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        # 屏保保存密码提示框
+        prefs = {'credentials_enable_service': False, 'profile.password_manager_enable': False}
+        options.add_experimental_option('prefs', prefs)
+        # 反爬虫特征处理
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        return options
+
+    @staticmethod
+    def decrypt(data: str, encoding: str = 'utf-8') -> Dict[str, object]:
+        iv = bytes("0123456789ABCDEF".encode(encoding))
+        keys = [bytes(key.encode(encoding)) for key in ("Dt8j9wGw%6HbxfFn", "jo8j9wGw%6HbxfFn")]
+        n = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
+        result = dict()
+        for key in keys:
+            try:
+                aes = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
+                result = json.loads(Padding.unpad(aes.decrypt(binascii.a2b_base64(n)), AES.block_size).decode(encoding))
+            except Exception as _:
+                continue
+        return result
+
+    def refresh_cookie(self):
+        self._cookie = None
+        options = self._get_selenium_config()
+        driver = webdriver.Edge(options)
+        driver.get("https://jzsc.mohurd.gov.cn/data/company/detail")
+        while True:
+            try:
+                driver.find_element(by=By.XPATH, value='//div[@class="el-dialog__body"]/span/text()')
+                self._cookie = driver.get_cookies()
+                break
+            except NoSuchElementException as _:
+                continue
 
     def _get_qy_region_by_province(self, province: str) -> str:
         return self._province_to_region_id.get(province, self.ERROR_REGION_ID)
@@ -96,6 +156,37 @@ class JZSC(BaseCrawlPackageProcessor):
         return sorted(
             set([item['APT_CODE'].strip() for item in json_data['data']['pageList'] if item['APT_TYPE'] == apt_type]))
 
+    def _crawl(self, p: Params) -> None:
+        NotImplementedError("必须实现_crawl方法")
+
+    def _clean(self) -> None:
+        NotImplementedError("必须实现_clean方法")
+
+    def _save(self, p: Params, file_name: str = None) -> None:
+        NotImplementedError("必须实现_clean方法")
+
+    def run(self, p: Params) -> None:
+        self._crawl(p)
+        self._clean()
+        self._save(p)
+
+
+class Campany(JZSC):
+    """
+      建筑建设工程企业处理类
+    """
+
+    def __init__(self, js_path: str = None) -> None:
+        super().__init__(js_path)
+        self._ROOT_PATH = self._ROOT_PATH / '建设工程企业'
+        self._ROOT_PATH.mkdir(exist_ok=True)
+
+    def _crawl_detail(self, detail_ids: List[str]) -> None:
+        """爬取详细信息"""
+        # { code: 408, message: 'token失效', success: false }
+
+        pass
+
     def _crawl(self, p: Params):
         page_limit = 30
         params = {"pg": "0", "pgsz": "15", "total": "450"}
@@ -107,67 +198,81 @@ class JZSC(BaseCrawlPackageProcessor):
             params.__setitem__("qy_region",
                                self._get_city_qy_regions_by_province(p.province).get(p.city, self.ERROR_REGION_ID))
         if p.qualification_type:
-            params.__setitem__("qy_type", self._get_qy_type_by_qualification_type(p.qualification_type))
+            qualification_types = [self._get_qy_type_by_qualification_type(p.qualification_type)]
+        else:
+            qualification_types = [value for name, value in self._qualification_to_type.items() if
+                                   name in ("勘察企业", "设计企业", "建筑业企业", "监理企业")]
+        type_to_qualification = {value: name for name, value in self._qualification_to_type.items()}
         apt_codes = self._get_apt_codes(p)
-        for apt_code in apt_codes:
-            time_print(f"开始爬取{apt_code}代码的数据")
-            params.__setitem__("apt_code", apt_code)
-            page = 0
-            while True:
-                if page >= page_limit:
-                    time_print(f"只爬取了{apt_code}代码的前450条数据")
-                    break
-                params.__setitem__('pg', str(page))
-                url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/list"
-                response = requests.get(url, headers=self._headers, params=params)
-                time.sleep(secrets.choice(list(range(2, 4))))
-                try:
-                    json_data = self._js.call('extract', response.text)
-                except Exception as _:
-                    # 此时爬虫被封需要等待一段时间继续爬
-                    time_print("爬虫被封，休息片刻...")
-                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
-                    continue
-                df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
-                if df_cur.empty:
-                    break
-                self._df_results = pd.concat([self._df_results, df_cur])
-                page += 1
-            time_print(f"成功爬取{apt_code}代码的数据")
+        for qualification_type in qualification_types:
+            params.__setitem__("qy_type", qualification_type)
+            for apt_code in apt_codes:
+                time_print(f"开始爬取{apt_code}代码的数据")
+                params.__setitem__("apt_code", apt_code)
+                page = 0
+                while True:
+                    if page >= page_limit:
+                        time_print(f"只爬取了{apt_code}代码的前450条数据")
+                        break
+                    params.__setitem__('pg', str(page))
+                    url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/list"
+                    response = requests.get(url, headers=self._headers, params=params)
+                    time.sleep(secrets.choice(list(range(2, 3))))
+                    try:
+                        json_data = self._js.call('extract', response.text)
+                    except Exception as _:
+                        # 此时爬虫被封需要等待一段时间继续爬
+                        time_print("爬虫被封，休息片刻...")
+                        time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                        continue
+                    df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+                    df_cur['QUALIFICATION_TYPE'] = type_to_qualification.get(qualification_type)
+                    if df_cur.empty:
+                        break
+                    self._df_results = pd.concat([self._df_results, df_cur])
+                    page += 1
+                time_print(f"成功爬取{apt_code}代码的数据")
 
     def _clean(self) -> None:
         self._df_results['COLLECT_TIME'] = self._df_results['COLLECT_TIME'].apply(
             lambda x: datetime.fromtimestamp(x / 1000).strftime(TIME_FORMAT))
-        columns_map = {
-            "RN": "序号",
-            "QY_ID": "查询ID",
-            "QY_ORG_CODE": "统一社会信用代码",
-            "QY_NAME": "企业名称",
-            "QY_FR_NAME": "企业法定代表人",
-            "QY_REGION": "区域代码",
-            "QY_REGION_NAME": "企业注册属地",
-            "OLD_CODE": "原始代码",
-            "COLLECT_TIME": "注册时间",
-            "QY_SRC_TYPE": "数据类型",
-        }
+        keys = ['RN', 'QY_ID', 'QY_ORG_CODE', 'QY_NAME', 'QY_FR_NAME', 'QY_REGION', 'QY_REGION_NAME', 'OLD_CODE',
+                'COLLECT_TIME', 'QY_SRC_TYPE', 'QUALIFICATION_TYPE']
+        values = ['序号', '查询ID', '统一社会信用代码', '企业名称', '企业法定代表人', '区域代码', '企业注册属地', '原始代码',
+                  '注册时间', '数据类型', '资质类别']
+        columns_map = dict(zip(keys, values))
         self._df_results.drop(columns=['RN'], inplace=True)
         self._df_results.rename(columns=columns_map, inplace=True)
-        self._df_results.drop_duplicates()
+        self._df_results.drop_duplicates(inplace=True)
+        self._df_results = self._df_results[values[1:]]
 
     def _save(self, p: Params, file_name: str = None) -> None:
+        dir_path = self._ROOT_PATH / p.province
+        dir_path.mkdir(exist_ok=True)
         if not file_name:
-            file_name = '-'.join((p.province, p.city))
-        self._df_results.to_excel(f'./data/{file_name}".xlsx"', index=False)
-
-    def run(self, p: Params) -> None:
-        self._crawl(p)
-        self._clean()
-        self._save(p)
+            file_name = f"{p.city}.xlsx"
+        self._df_results.to_excel(str((dir_path / file_name).absolute()), index=False)
 
 
 if __name__ == '__main__':
-    # j = JZSC(js_path="./js/decrypt.js")
-    # p_ = Params(province='湖北', city='黄冈')
-    # j.run(p_)
-    df = pd.read_excel('./data/湖北-黄冈.xlsx').drop(columns=['序号']).drop_duplicates().sort_values(by='注册时间', ascending=False)
-    df.to_excel('湖北-黄冈.xlsx')
+    chat = Wechat()
+    company = Campany()
+    x = company.decrypt(
+        "95780ba0943730051dccb5fe3918f9fe0b265875366ec51d2bbc4ecc85d8dc5a51890bb92ed7e87c2f1058839c9031ce82e2953071eef9336e5311c9470ee19f28191d49fa180a52c2f725536bc769427f2ddca3157d0559a947b42f661af659206102689ec47f28ba74b6209a9f2e2f")
+    print(x)
+    # provinces = ['湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州', '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '新疆生产建设兵团']
+    # for province in provinces:
+    #     city_region_map = company._get_city_qy_regions_by_province(province)
+    #     for city, region_id in city_region_map.items():
+    #         start_msg = f"开始爬取“{province}-{city}”的企业数据"
+    #         time_print(start_msg)
+    #         chat.send_msg("文件传输助手", start_msg)
+    #         # chat.send_msg("程文梁", start_msg)
+    #         p_ = Params(province=province, city=city)
+    #         company.run(p_)
+    #         end_msg = f"成功爬取“{province}-{city}”的企业数据"
+    #         time_print(end_msg)
+    #         chat.send_msg("文件传输助手", end_msg)
+    # chat.send_msg("程文梁", end_msg)
+    # df = pd.read_excel('./data/湖北-黄冈.xlsx').drop(columns=['序号']).drop_duplicates().sort_values(by='注册时间', ascending=False)
+    # df.to_excel('湖北-黄冈.xlsx')

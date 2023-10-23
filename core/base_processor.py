@@ -2,14 +2,10 @@ import sys
 import json
 import codecs
 import secrets
-import subprocess
 from pathlib import Path
-from functools import partial
 from typing import List, Dict
 from configparser import ConfigParser
 from abc import abstractmethod, ABCMeta
-
-subprocess.Popen = partial(subprocess.Popen, encoding='utf-8-sig')
 
 import execjs
 from selenium import webdriver
@@ -141,8 +137,8 @@ class BaseProcessor(metaclass=ABCMeta):
 class BaseCrawlPackageProcessor:
     EMPTY = ''
 
-    def __init__(self, js_path: str) -> None:
-        self._js = self._get_js(js_path)
+    def __init__(self, js_path: str = None) -> None:
+        self._js = self._get_js(js_path) if js_path else None
 
     def _get_js(self, js_path: str) -> execjs.ExternalRuntime.Context:
         with open(js_path, mode='r') as f:
