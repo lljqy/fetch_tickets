@@ -66,12 +66,16 @@ class TicketProcessor(BaseProcessor):
             self._driver.find_element(value="J-userName").send_keys(self._conf.get("login.username"))
             self._driver.find_element(value="J-password").send_keys(self._conf.get("login.password"))
             # 点击登录
-            self._driver.find_element(value="J-login").click()
-
+            while True:
+                try:
+                    self._driver.find_element(value="J-login").click()
+                    break
+                except Exception as _:
+                    continue
             try:
                 # 如果隐藏了浏览器则不处理不用用户自己输入, 身份验证信息需要在终端填写
                 # 填入身份证后四位
-                time.sleep(self.MIDDLE_INTERVAL)
+                time.sleep(self.MIDDLE_INTERVAL * 2)
                 id_card_input = self._driver.find_element(value="id_card")
                 id_card_input.clear()
                 id_card_last_four_number = self._conf.get("login.id_card_last_four_number")
@@ -86,7 +90,7 @@ class TicketProcessor(BaseProcessor):
                 self._driver.find_element(value="sureClick").click()
             except (NoSuchElementException, ElementNotInteractableException, StaleElementReferenceException) as _:
                 # 代表此时不需要输入验证码
-                pass
+                time_print("报错了(请自行输入证件号和验证码):" + str(_))
             # 等待访问网页是否加载
             WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
                 ec.url_to_be(self._conf.get("url_info.init_url")))
