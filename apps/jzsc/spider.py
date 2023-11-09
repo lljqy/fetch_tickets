@@ -5,6 +5,7 @@ import secrets
 import binascii
 import warnings
 from pathlib import Path
+from itertools import chain
 from datetime import datetime
 from typing import Dict, List
 from dataclasses import dataclass
@@ -15,7 +16,7 @@ from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, InvalidSelectorException
 
 from utils.wechat import Wechat
 from utils.proxy_utils import ProxyHandler
@@ -103,9 +104,9 @@ class JZSC():
     @staticmethod
     def _get_selenium_config() -> webdriver.ChromeOptions:
         # 浏览器适配对象
-        options = webdriver.EdgeOptions()
+        options = webdriver.ChromeOptions()
         # 设置无头
-        options.add_argument("--headless")
+        # options.add_argument("--headless")
         # 设置代理，后续完成
         # 屏蔽'CHROME正受到组件控制'的提示
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
@@ -130,20 +131,16 @@ class JZSC():
                 continue
         return result
 
-    def refresh_cookie(self):
+    def refresh_cookie(self, query_id: str):
         self._cookie = None
         options = self._get_selenium_config()
-        driver = webdriver.Edge(options)
-        driver.get("https://jzsc.mohurd.gov.cn/data/company/detail")
-        while True:
-            try:
-                driver.find_element(by=By.XPATH, value='//div[@class="el-dialog__body"]/span/text()')
-                self._cookie = driver.get_cookies()
-                self._access_token = driver.execute_script(
-                    "return window.localStorage.getItem(arguments[0]);", "accessToken")
-                break
-            except NoSuchElementException as _:
-                continue
+        driver = webdriver.Chrome(options)
+        driver.get(f"https://jzsc.mohurd.gov.cn/data/company/detail?id={query_id}")
+        while not driver.execute_script("return window.localStorage.getItem(arguments[0]);", "accessToken"):
+            continue
+        self._cookie = driver.get_cookies()
+        self._access_token = driver.execute_script(
+            "return window.localStorage.getItem(arguments[0]);", "accessToken")
 
     def _get_qy_region_by_province(self, province: str) -> str:
         return self._province_to_region_id.get(province, self.ERROR_REGION_ID)
@@ -233,6 +230,7 @@ class Campany(JZSC):
 
     def __init__(self) -> None:
         super().__init__()
+        self._access_token = ''
         self._ROOT_PATH = self._ROOT_PATH / '建设工程企业'
         self._ROOT_PATH.mkdir(exist_ok=True)
 
@@ -249,160 +247,6 @@ class Campany(JZSC):
             params.__setitem__(
                 "apt_code", self._apt_code_map.get(p.qualification_name, self.ERROR_APT_CODE).split(self._SEP)[0])
         return params
-
-    def _crawl_detail(self, detail_ids: List[str], province: str, city: str) -> None:
-        """爬取详细信息"""
-        # { code: 408, message: 'token失效', success: false }
-        self.refresh_cookie()
-        headers = {**self._headers,
-                   'accessToken': self._access_token,
-                   'v': '231012'}
-
-        cookies = {
-            'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
-            'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
-        }
-
-        df_company = pd.DataFrame()
-
-        for query_id in detail_ids:
-            # 企业详情
-            com_detail_url = f"https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/compDetail"
-            response = requests.get(
-                com_detail_url,
-                headers=headers,
-                params={'compId': query_id},
-                proxies=self._proxies,
-                cookies=getattr(self, 'cookies', cookies))
-            time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
-            json_data = self.decrypt(response.text)
-            df_cur_company = pd.DataFrame([json_data.get('data', dict()).get('compMap')])
-            df_cur_company['QY_ID'] = query_id
-            df_company = pd.concat([df_cur_company, df_company])
-
-            json_data = {'code': 200, 'data': {'orderStr': 'apt_certno asc, apt_id', 'pageSize': 25,
-                                               'pageList': {'total': 10, 'pageSize': 15, 'list': [
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '市政公用工程施工总承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1488470400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '陕西省住房和城乡建设厅',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203220822011', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D110B', 'COLLECT_SOURCE': 'ZS##D261047095',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798740000, 'RN': 1,
-                                                    'APT_CERTNO': 'D261047095'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '建筑工程施工总承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1488470400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '陕西省住房和城乡建设厅',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203220822012', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D101B', 'COLLECT_SOURCE': 'ZS##D261047095',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798740000, 'RN': 2,
-                                                    'APT_CERTNO': 'D261047095'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '建筑装修装饰工程专业承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899636', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D211B', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 3,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '防水防腐保温工程专业承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899637', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D206B', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 4,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '环保工程专业承包三级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899638', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D235C', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 5,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '水利水电工程施工总承包三级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899639', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D105C', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 6,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '古建筑工程专业承包三级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899640', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D214C', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 7,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '钢结构工程专业承包三级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899641', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D209C', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 8,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '城市及道路照明工程专业承包三级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899642', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D215C', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 9,
-                                                    'APT_CERTNO': 'D361094546'},
-                                                   {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
-                                                    'APT_NAME': '建筑幕墙工程专业承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
-                                                    'APT_GET_DATE': 1523462400000, 'APT_GET_TYPE': 'QY_ZZ_QDFS_001',
-                                                    'APT_TYPE_NAME': '建筑业企业资质', 'APT_STATUS': 'B_ZGZT_001',
-                                                    'IS_LIMIT_NAME': '不受限', 'APT_STATUS_NAME': '有效',
-                                                    'OLD_CODE': '064834709', 'APT_GRANT_UNIT': '榆林市城乡建设规划局',
-                                                    'APT_LIMIT_CONTENT': None, 'APT_EDATE': 1703952000000,
-                                                    'APT_ID': '221223203344899643', 'APT_TYPE': 'QY_ZZ_ZZZD_001',
-                                                    'APT_GRANT_UNITID': None, 'QY_ORG_CODE': '91610800064834709T',
-                                                    'APT_CODE': 'D213B', 'COLLECT_SOURCE': 'ZS##D361094546',
-                                                    'APT_GET_TYPE_NAME': '申请', 'COLLECT_TIME': 1671798824000, 'RN': 10,
-                                                    'APT_CERTNO': 'D361094546'}], 'pageNum': 0}}, 'message': '',
-                         'success': True}
 
     def _get_total(self, p: Params) -> int:
         params = self._parse_params(p)
@@ -494,6 +338,117 @@ class Campany(JZSC):
             file_name = f"{p.city}.xlsx"
         self._df_results.to_excel(str((dir_path / file_name).absolute()), index=False)
 
+    def run_detail(self, p: Params) -> None:
+        """爬取详细信息"""
+
+        def _custom_get(url) -> List:
+            pass
+
+        def refresh_headers(query_id: str) -> None:
+            self.refresh_cookie(query_id)
+            headers.__setitem__('accessToken', self._access_token)
+
+        def _crawl_company_detail(query_id: str) -> pd.DataFrame:
+            com_detail_url = f"https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/compDetail"
+            while True:
+                response = requests.get(
+                    com_detail_url,
+                    headers=headers,
+                    params={'compId': query_id},
+                    # proxies=self._proxies,
+                    cookies=getattr(self, 'cookies', cookies))
+                time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                json_data = self.decrypt(response.text)
+                if json_data.get('code') == requests.codes.request_timeout and json_data.get('message') == 'token失效':
+                    refresh_headers(query_id)
+                    continue
+                df_cur_company = pd.DataFrame([json_data.get('data', dict()).get('compMap')])
+                df_cur_company['QY_ID'] = query_id
+                return df_cur_company
+
+        def _crawl_cert_detail(query_id: str, apt_cert_nos: List[str]) -> pd.DataFrame:
+            cert_url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caCertDetail"
+            params = {'qyId': query_id}
+            df_cert_nos = pd.DataFrame()
+            for cert_no in apt_cert_nos:
+                params.__setitem__('certno', cert_no)
+                while True:
+                    try:
+                        response = requests.get(
+                            cert_url,
+                            headers=headers,
+                            params=params,
+                            # proxies=self._proxies,
+                            cookies=getattr(self, 'cookies', cookies))
+                        time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                        json_data = self.decrypt(response.text)
+                    except Exception as _:
+                        continue
+                    if json_data.get('code') == requests.codes.request_timeout and json_data.get(
+                            'message') == 'token失效':
+                        refresh_headers(query_id)
+                        continue
+                    df_single_cert_no = pd.DataFrame([json_data.get('data', dict()).get('rawCaDetail', dict())])
+                    df_cert_nos = pd.concat([df_cert_nos, df_single_cert_no])
+                    break
+            return df_cert_nos
+
+        def _crawl_qualification(query_id: str) -> pd.DataFrame:
+            page = 0
+            params = {'qyId': query_id, "pg": str(page), "pgsz": "15"}
+            qualification_list_url = f"https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caDetailList"
+
+            df_cur_company = pd.DataFrame()
+            while True:
+                if page > self._DATA_LIMIT // int(params.get('pgsz')):
+                    time_print(f"{p}条件下的总数超过了{self._DATA_LIMIT}条")
+                    break
+                params.__setitem__('pg', str(page))
+                try:
+                    # 查询证书列表
+                    response = requests.get(
+                        qualification_list_url,
+                        headers=headers,
+                        params=params,
+                        # proxies=self._proxies,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                except Exception as _:
+                    continue
+                if json_data.get('code') == requests.codes.request_timeout and json_data.get('message') == 'token失效':
+                    refresh_headers(query_id)
+                    continue
+                page += 1
+                df_cur_page_company = pd.DataFrame(json_data.get('data', dict()).get('pageList').get('list'))
+                if df_cur_page_company.empty:
+                    break
+                # 查询证书详情
+                apt_cert_nos = df_cur_page_company['APT_CERTNO'].unique().tolist()
+                df_cert_nos = _crawl_cert_detail(query_id, apt_cert_nos)
+                df_cur_page_company['QY_ID'] = query_id
+                df_cur_page_company = pd.merge(df_cur_page_company, df_cert_nos, on='APT_CERTNO', how='left')
+                df_cur_company = pd.concat([df_cur_company, df_cur_page_company])
+            return df_cur_company
+
+        headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
+        cookies = {
+            'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
+            'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
+        }
+        detail_ids = list(
+            set(chain(
+                *pd.read_excel(self._ROOT_PATH / p.province / F"{p.city}.xlsx", usecols=['查询ID'], dtype=str).values)))
+        df_company = pd.DataFrame()
+        df_qualification = pd.DataFrame()
+        for query_id in detail_ids:
+            # 企业详情
+            df_cur_company = _crawl_company_detail(query_id)
+            df_company = pd.concat([df_cur_company, df_company])
+            # 企业资质和证书详情
+            df_cur_qualification = _crawl_qualification(query_id)
+            df_qualification = pd.concat([df_cur_qualification, df_qualification])
+
 
 if __name__ == '__main__':
     # 企业详情
@@ -521,9 +476,8 @@ if __name__ == '__main__':
                                            'IS_FAKE': 0}}, 'message': '', 'success': True}
 
     # 证书信息 + 企业资质资格
-    url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caCertDetail?qyId=002105291239451309&certno=D261047095"
-    data = "5588a9e126c91a28cc2f6813e37933695200acf48c974f58b6a551d08a5efbb212d9653f977f6d2b4ad915e7104d9f9aca86f905955999145581c45fefa6aa4f2993e0d4636243c14f784270d293019c9326ef89c7d18633451a8a403241f54fce33bf6b4581c3918f7e24706ad7fd98dd2ffcf3e264a3ea92d5f59eaa7c71cef24b190c3278873398002111b88a82f519c758307f1eff414eeb686f0386d8647eab0e4c08fab0ee9a9c52d162fce729e7fd614610f39f455d67659f0b39742ab911073ba0a748ce793ba3785d2019c8052945233278e2495eaf8b033ce7a70f8d5dd59bd0510ddd2cb49f4ff9e33c9432fa7ceb02077189b0e1136bbaeba9e4a67365a66a81fcd2efa9ec6c48a06e4d0641f37db8dbf45c3808ae802643e0381809655043072bc38bae30f54e6361131f9ba5ee91653134815f61ba534689e02b2f96227db635fd081af572a9dd4b898eb2e92bd8505796cc196a43cef8b5533c1d6ef6f24703280780ea97555e53e3f194c434756370eaf88dc24ffb9c5ef5478bd69986941dd6c020784b2e921b7c26fe6c0104266c3cef2acf74f3dc9c6a9773aa8c7064e1f741b70073ce6f8f6f428b900174d6ed4b19c2c4258d1c1a6c4fe36e6f963ecd690b40bcf37fa02ee35f1f461753287b094d72f71495d781411282738f8ece8c4a4ec928e77623791ff70524020a67da86a1698ea9052f372ba0939893f6f958b1018ad91692601d3ec3409cb3e6170b24ae6678dbb37d0a290fa0c3f6c71af979efd5a56b170328a4fde874b09eca8b282afe6dccea0b0e470d05c6dc5b91c83dbbeb45fc59c1bca7a3784c5165a7794a419995dee826a8d04821ad12ff3c32a2836aa0c7ca0a96fcf326cf45fb5112ae031e571e35a3c519d44d3feac018d17179070f9f4e423d9aae09de559cea7a138446c134d97530d693e4ceb29cd814e3e5b961a5f2d3291493cdf2895dca0d2efd22c93540272b521f67441c647b36965b8c187345c6b8194362d3deea1ef6e50b8b96b5ba789b42435cf75abcef88a467400228a972124e5c7bbf982dfe23245dd3e8797495b9858a5835e148baf85aaf7f535118564d36bb17010fe58534085237959bd1ed8c11cf9343c2189185721abee8040c7c428297d31e7fda1af807251b4cc8b3549aec5335ca1ebbf74d63aec07a9e2d7fd0c866305a480e5531d12e95acb91583c0150bee40bba62fb1f29a3b4260b06074beac0b36a80213686c0ec059aae76d0d361f25489039102d7c7f5b83768e3e1ec20237347d3e4215f57602293abc2e0eb76ef04215f70d5205c5c300b76ff9dea2f7d6d2987e9f5e15e828381cd21207864ff3303aa20cf7a36060638c5aff10dc60edc0e442cb905fe94e05b9d47dd4911d195a66947ff7d19b1ef01f69c73d9d8415af4143f3a95ef75739045861b6660682b5beca57ff75148a7d5db6f89b3ca86356c8a3a21a0a777c920bf1753c2ef1b8a2f71bef2ada18df546ffad6b062b9797a45b41af88dcda2ab7289d3f115b2b5746d326eb99f22ef21981a4fcd4024657313b52e2b4b772333c3a62e563fca93b8100caac8c168642b4f8e9ed04f120948fb9d6d66a1c42604d46af0b75a00388049ad6bf7d1ad987d3790904a0ba95937402be9672364000188086c012eee7d56ff22c30cc27c2f2d42f8c9c38f321f614f05f42af84afa4927afae96b8c118a67c159e8984be0584b9e3834f9c0aa6f3a2b5f42caf3a3c74f1bdc4f0b984729727b0ce6bd03bcea2ad0cc09103a0cd3dbd32028a2be19dce21eaad0036b92aacff6ac7abf7fa1b389b144d99950004d273152d75647fd71c60d48c0f132e22b30e73f51278c09a8fc4cbcb83cc5dec4ba23e23f98c723b56d0f702a90eed98db54becaa87185007c8e420bd6c1ddb8e4d2613714ce69d14142a595e83ebf4d85f3b35fe1fa3da0bdc7ac87a2f40c76dcd41e6a21b3bfd55e376f8b46c822771793991047a52b42320f1520393c9587bb092cec4fd160d902d1062d35764a476b2527c625b500edbf089569b1f3c7673703361aa02065564e50cd41a4f2a8a19cfbe955cb17e496e32778e872fbc0b10b356490f6a0378e89d308768887bec246232ff38769f5adf444b2af195b98e1ae8e2fe8f91ff0450a8447b067eeacbd8195456b53828d8cf4d70df12e4b41f1ccb1d30f82d093033f044a54ec2d199e590469a05723a18f628887687db3da06c98244784fa54d4b2d4c00830fcdb19698b44da00582bb66e83602d82c35ca7cc794cca29c868a703ccc59711b031096dc4029e5fef4525773168188c1d491f25e09bf93cdd79b6ababe87dc760298b9ed3b0c6dd3498b7e850a5d6180eeb157ffb4ec26f83dc4207fed2cdd4c391063f4f36079fdb0c72332224187a99dbc8b3c6c93b668456c771b5d673790f5cccf4d3df3bfb95d3bc936f4a26f2c398570818229f1be4293920da9b2647958e86234cf7a8873a76929ca41c5b5f9191b11263c219ddcc54ec9f99185fea086c13435c1ff430cad75e8a3f22dd47e7f62b77bb4f7758ef5b4a0297fe294049c05c3d184f1492c781fd8184f940865f246062d3446334504f68cea340fe9c41525449e1590db272223855fc441fb86227cf9c595655a919719984c2206be6d8250fa67fe2fb9649cc080c568efe0fed75f5356e652b257e7a5de55cba1837e810a06b452ef415f063ed614dbab0722e41f8094fe995c08dfca19aca6d8cfab424327f2240b82a40e2e26220aecb9ef19ed406c0272c37cdf9a13dbee53e99d36b2f8534749de1e77f44341c21bac85aab11e18d375969bd333f2a31a92e88439a25fdcca99be9b01d965f2d447adc580aa9c6f89987cedea7bd4881a21f710e64d30b72e97128e44bde546f7e37ed09ffb344ab47698293f6b87fd7526e6a15154b819f7d032e93be3cfa1be7f444de1cf0727ccab910bf5de6880aed48f5d396efc0008f43e5c6c1c202c7218a5db081874218ce5ea8ad788c6b17e830207ffda64ba30558104688c7cf7eb70e9be1dbd11e5b1ec6575a18788d045906cd57ea94f2f49665af90eed383544051b0d59b740366f344f159461e2aaa2e1190c26aa01f185a0dbcef5db8b9b3412f2e4d10455e8d0ac08075fd930518c2f07cc0ebe38c8eff79a3f7dbe4fb584588a50dead6a766d185f87ed2d139f545d4fdf0cdf74ba68408d3cfd1d152b8542e234f75b7d6af6b5f458bb7d3aaf33a3774d4af81e2f63454138509a649dad28abd0ceb5b8828cdf338d91b63ae154a5a60ac273946b62d378cb3e252330885c8269a321542ecda74ac00946fa9b33406ebd4de5f2b9330d4563b75c3fcac0b359c2f790d7d4e329be7f2b8b8feecd024dfb1fa691ee4a1e7f8acb59c356902ac81ef667d7e5cbb84739c31e8fffc3550a459f7c2aa26c29387d64091817edc59fd163236aeb796f9256cc5e34d3e1401f4ebdbc2662a8bef4ba265b50805f4f2822c4682c48640b2493c96efa85bc39b5f47129d17e01d67dae89a8ddf7c04befb25e42b8452425e4f064328e74e6f7581c4dfc594705ad1069b9faefc7c2c2bb4a95f01e9d6f2ed3f03a3352eea0fcaa1279ec4bc16dba7b509b0837ec6c3958893a789b23eeb57aba54262122f26f5a335737db02e19ee49904d4aece7370a3c1b58172b75f4663436000e3f26ac6831c0b0418e5a96a7c52ffa42fe9c0745cec2ac9ea98093cd43f61d787c00bd681814b49d346570500b1fefe5b3cd4be4b81fe1d69b85cfde77a8e2413c7dd0d1a91d8de5223e30c4822e5f49861cbf6e24874d593dad9fbc1d7617a168027d81d476739f8e107d88e978a39fc31e3917a8e1033008d11e47ca4fd6235ea1a6c57eed064193a3ed649045376aa2017a9a431452daf510a87fc38dbe50b5b43706b09cda270686cf4098c423d1657984ab561dbf2119c700243cbd719f78a35e81b785de54868353b3395aaefc958552bea66186164640d5443397757522e3fd2adae0b0119bf92d7c215e5cf00e6cb288046b35f40969e5ab51943843071c02ffb196d960aeacd3e2f21b25b3166a1034c8211efe910918ecc2d0a52ede42ed3353aab6df7c383e99e806a9b45cff41ad577e987358a45023771366b6d6062e40f2a1cff4d288692abc5a66defbab36d5dc5a41e915689adef3da5d3683157c5d758dfe4dbeb57b7d71ad8e30b066d7ff73e02d7d5b5cc6a5e77ee64dea7dacd1edf78aee596fe5f1fac9c29a060580c8ca9b7017ca50be325834c1b3bc100e483b92af94f239d7e900c776e62a5e4f18a0a41bafd84e95abb80dd8488a008fa4caec85fbfd43fd4cfeac4013f07e48079866e6977be7f57de98e47d326851a5cda498d918bd95e8ac4e854c068effd36faf62f8123ca17f6532d06b7ea1301e7287c3e7f4f367730425db49d62d2f7d8914f8d60c89fb2d19a5b04fc13758ccf4ef2c50b1f292e9f4ae6b1285493f403bd7ad28cfd9f76d79769420b05246c470e846ea373a916775793c8065819af49970fa42a72758ee279bc1b807c71f86d1c722f7ccd0fdc23c59dd2e80b40bb2eb674197827cc7f1461c19c2f7ab47bd9e61d40353f2a894d296a462d2c1016ff2812f3cb3bb8cca8468ae0eb3169765195cf0c328d802344a0aaf7a5f055ebf7471025a99b661bd68fba33714de0956d5a3db91b9679b305e44e0223ba9f1599c329aacdcf63d6929671348543693fed40634201ce047dfa1c839b80a55dacd0b296e9ee5a780b568cc3ad1bea3988eb65d0c999203dd3231d2314cc9b77c0986684d47a306e91ec4867f45808d6f3b0b6c19db369a20c7bff2ac8b043198dcaad7cc3c3b984a541e2527b9bdb5eb08819ee5bb21ac764b4ab18a6620936733f5e03334b7cab69642582815203d7918b5de72e717c17b47f4b5a324c78cc067381943f067eed01aae40446deae56796f160b46549f0c90b51814d95729075c9f09d7e6cfcd966ad55167248e27bccbc934a59979caa4ae5441aeb10681ce663d5850dcb52a75e3a1230497c587aeecec38891c4a572e4e601094f1239afe5e716ba8d6bae393f6e02be9a2333cef786d30ef66d5ee2b8b3abaefe3cf7b28ca6a5ef556db634fb44c60ee6bf3d37eb96f3e8baf60b84d17f892d51a5f24ca645d5c3e02e9fe4253c2437bbe684ed0755018d280316ece893da0092d054c9cda7108fd491bfed26805ef13cc8e71896fccd557322f0fd608f8728aa1c8786f3f1846cf93f98f33580bd37f69deb60b7e2b7d18b4b267e43a0f2d6bcb242b3b4786e2a50cded2348bd61e1f335d3cedf2ed4c2694c179dd947cc5aff8284917296a44d6f483c1711be0f09a79df8ce0697766ebc8e565553dd14e0933d84ff5f5c40170305370250f87961914a5bfade1f54626d2c61737566aacaab4bfd188fc5dbd4e7b83c7a7e86193141bc73e4f78a442da664a7a58c0d1a3cf1c47ecda8e126a803866ae990bcc21fe359ff4ce2f74fbec9c053379b60e78a9d375504c334183a5f4a4c27c39ebd0a3510703cc848aec261b757ef072aed07e0dff106370cc2d87691539f449d9c5882bd2c309a113fd5763aa2fd78d20eadd4a0c7decd3afe8013799aa583536b1c2545d56303ef24da59e0f31e5849b6cf85d453cbc5642b1cee1ca213071526864f3b9cb65f65b98937b4e7ef92f5f68d3228af9e3791143c354334002c98a5959f274e64a30b006b38fbf10326a0638399ddd59f5ba024b6a8d2eaa710bd977f840072269ec863467f3301cb0eaa8f4ecb13336517608e2b3cccce9b877982256b9e68c5f6984bb60834d46b1e88b7aeab68cedc19c5bc0a91507dc4381c53aee40bf59cfdefcc0b98ac40adb87036ced2f8076f4dd03d90c8e604b411619304b92dc4de095b560cce39587d9fcb109f3a1d84a65c88a17d5976621a1b6a1d572b1701e6659d14f53eae0ced86d4932d2d56eec90edd3c60e2bc3c99dda2d0d1c88e31fb52541a5830cf8350f63e2368cf18202337390ac4f32b5ba81c9ce5528266a8494aae71e3b6c76b2117afa86902a249baa0070d1105ad7b8da14fa0ac83043a73842408628969d9625c310e1d114b5eeece3fed89312fed01c5af37ff300be2a6b070c60add8f61a078a749a568f9f0717680a4f9494d8b7ed8716e988b0a3de8835c56f0817172231e786a94110664e73430dabef5c2aa946c71735aff888eda7dd3d898506fcffc3935d724eafed998d41e6e2d82b043908ade104cf4b117331b9e6f6124b1ede3e3923789bcef2b360428c08d2ac4a17bf2163e925e15f59e2037fc41fb45169004eee81b05d623224e1c11df5fbb980065071062be0be5e2078425aeeac23100504336dce981181a7daa43ab9e9848656133ce5cc7cde0befeab88ade6b432495dd3a544850d8ec3f7a71a92d5c9310f0d33a5ec9f72ef2efa21511d303444a3b79e5b2bbc35309652e21bb4ebb4c49e97a0e8c01f9b2001d4535f170a1bad9834c4bce399e857f6ad4d62bf6bbed2b40145efc3b9a36db494df6760ab1c69de9e21f36760e15229996de33b114b92e5303cd1e7e66209912ce9c61573144ff3dc4ba0b5aacbd8a1a789524c9736fdc5bf64c5f24030c5aafaf0937cd08af9aa53870465d9b8b9348449a9f2d68716cffab093c2737f0e192339e87c91505ec083838c5258e2792e1bc8193bd08280c28f3207a91d1e8539c76ca972f309343815bdbdbc191d31d9c029482a5fc230b79863e2cc459732c64aea70c8163505ced4e50fbcc3ab72ebbff0727eeebd6a390795d5170d54f2cc0e2ecd867fc41994dfda977dd78dc98bff4d33c20374c6b28317ba31f5853eebed9cfd8b141ec4be8b1c23619c91546b873ac22fc724165cda7ae0f7ffc89e48a71cec7c41c29b6937197cf192638962571f46c1853d790c6a4cb8425cd1f5b451304586f8f99c18bae5e6b5715cbb5b913c083ee770dc88abe30716baa1c32ac413b0a05a51a4ef8ab9474046d9be1df2a22124d2df632667fe3545715067587275bc4d600e353fa74dd14fb51d7f706526ea0f383a5c5498718a0f43bb7a4922878434bcc7fa8e7e7d21cb995733a634c041d86682c72571ccc505be77d732d661297268b904f5c7fb024948379d3e87e4c90037a3f9c4b76ca0e8401b1ecdf15c94f86852a43a348733f89c2a3a720c6a2b4b871abc3a1080a848555cebac129508778378ecc484a0ac7ae75a652549efd39b9263150592d170343bef62bef3703183a5dd0f0ef76f8e96eda770034fec8c80cbfa5773d42d16d94832296786d52341848c2374d5cd575d49a28724aa0b2535dc119860e385a79961c35ae7dc881a0e5a527b13bbaa6652e8c489f6a61e583ebdd7acfceb136ab0ad8effa862c8c4967d0fe9576d22fc5ee237a96ae6406af4730ceb6f4511d3f1044385256becdf321db393dbb5e719a08e8c0b58c1f450580826cd662851b32b2ed1d8eb6ea71aaedc167123873b27ac41c6713d68c5859969cdf7363327181ca936b3890564bdd74765a562602864a83538b5295aaf88aeb20333eb99bc945678fc5296ec2a0b68ca26dc6739fa1e4d07cf39d636a1a0decd2184d27552c3c507e8e579d769ee609dff5ef2bfe031818b8e33cfb6f56a9a9a48ac5bfb0b2cd3d905288c6f77148551f26d4faebdf3bc3e2dec521c3406c0e46afcd2c621d4c83c745e9bccf3a2afd3fd62e478525b9338f2dac5054b8687a2cbb07cb4429eaa0032ff83cf0d1767b01b12cfca9d5d0a35b0df86dc4e209021ef84625858e9ad3fb46b23f1fab4d0c6030386b5e528fad2a3bc59b9e15d5fe7200b1fb88c8dc4b593b74a20498fae242444e507dd673e34baff458a543dd087ef5317e1eb0328f1cb9c0942d7a11bac2cf14bec910bb6588874cc706796616a0aeff2e001eeaa2442f0498308f569267b8503e309b2ef964f36eb1983b057b930cb3026a61ca718c067192b998c829f538dd5c7b8a263d92c9d9b53b953cce3233060b2982d943f428510df7f84f290b225ab02aebc7301115432cab5a8ffbdd7cfb7d3dc069c25df53851fcd5401a763d82ec233f4690f152b8cc4b5a2819010bbff3faf21c3dd869d297e5297b13345c9771d40c100452767e42fe67f57667c65a34197688410e470cc8cb9676d5fe5ede9f41e757ce1bc86457606b7ad8ebe2dd1e2cce4123e21479da8a5c13b7af7d041a21678bdf69628dce876cb3220944704b59966446fd7dfcb95acef5ad12f7b87c262bef3b9fca7dc205e618806b4bdc9dd0bfd4452da0dfacdb7e19cbd4e993fa9acec86b46304635754089367dc00b8c983b29312d28113c4ce79681d95bf1887892321413583f9582c42279bc08f5eba35c4da3656e7707e10ccfdd195832bb5d83b6ef126832404402010865839dd2f6268d51754cfe854a56925860f9ef6f8a116b1ead14d4778485155e4070ba2dc71fae663132435d385a81010ac776828b7227d0b388ded48a659ae231b6455c9fb999f1981d236134ee2169d864624e8aaa6520315202f328e984cca8f05ba16940bbcd96758fe1718b70748ada79794c8828f9216d77c6cce049824292775a6697da2f2b8d33e334ce49ca6620e87b598fa9c87c04a86ea5a78d21f070742a22892983c65c85a295b32ad938ae9fd4ce2713db398dae20db54414af2a31e7858f0769a85944dd0d53cb7d44aef5c5c56ea6931e5e73fbe9369f60293c8ad2f7d134bf59e3d26393155669dd956ce3720a4e2fcbd26999ca0334c42a2c5f066da3429ffb984fcc8d12806fe805659255345fbdb17362d445f6760227496ab87eb1f9ee35932c7f0ca6fc59a5ff14693f296972e70b18eb0cd5d6dad3c9a0bdb0311b3bcdf93d40d7ab56ec71bab333bef627a5b58430673e65cf8638972f8e2d1c21d137080dc2044a975ad0bd8d772a527f6531600a11bb8402a6ee307ffb7ba95b285df54b6764f0fac1230dee51636f6f43827065f8b4824be3e44e189cb63c669896070a42329ac0348e0631f055b735265596332c6924552bf564ec12e7858b8451daf7c706c7eb61b80cd5bbc0a7ed9a4e47ab0622218c241270bbbb2f38e05e4f07b2cbccebca897c743897ff27b35bdf45815850c45474c1d44833f6fa2d98c9848573886eecb48e82d97adb8499f0fef082019a2a72991ee203c395adaa2588953886e04e77f537fe40441fe6d7c4bb43d8ef6c628835cfa276c48ee71d28a99db046d5c90c6bcb30d7cdae4dc827ed1822baff28bacf169b354c99a66274b721be14564e72aa0d688054af2f76b9bc488436532ed00bcb2f5c8eaafff4c80f6db5971052b01c9f1e7eb1efbfbc12a630756163c845a8f5d62ea581bb54b11bfae9e217d7b7cc3e748702ec8d705558863bdefeb9aef1c079f66a8cb2386780598decdd41a36a58554b9e813c6c7b7659cea702e0018dfc8f798d0c1a1e11e5dd92e9628d5d894cc5ad761ea8c6c4940cfaf74bae84f10c87c078d2ef9f26a9fad2b72e974aeaf79d943ef2f1446700631fbde5bb980de514760aed5bb4bbcb202fa25ace700ccf9785cb6bea37127e51135c941e16bbbafdeb3da5abe650ed3df4a747fc7f2739262e63aadc7a22a9cfcefb6ebd80f01ed1adcad7b835647ed499f115f1a73b928f79b9cb38022cc07757a7612dc7734c82a1cef464424f90fbc8e9283019718a53f9b4c36ec10a1e6b00ad6f3583fcf1458b298a77a3bebe6b3e83a8781792b8c0a6f61fa8a422389fd232fa7747b25f0e5db5ad11683c04350e020d7963474811ecd2f5c5a69ce846e1ab5eb09397c1ca529d9acbb7d982cd2a5200f636f49b817fbf1fc51a0a92def7a59ad2b12a9650f0c257d421498c24b9e96237e6a60cc080adb44ac6153d66328a6638c9a11a1ff515285aea2bb0c2f81e7b8286c6ba0993e0e52ec1f21d396ada97b94f992597526e54e1ca22dc503ef9217cfed18b68de2475f5634730497061bf8bf62896a72f8d22ae13535ecb05c3d2c09842e48bee3c6c74136386f7232df049cbb06670882b18e692ab5b8d88343d47f9ad41abe5b6555483fe3b33ff7fcedbb0c9b4fe10de4f1e6f63c8fc3cba60b5f887d45708def81328ccd8a69898a3f2d0ad0c08c3ae2a3ec4307f4665893dcbf9a8acc8f0ad81ddd3114862feb2c48919a429887ed072630f20b33bb7967afa7de75760fd650e2630f7be03067124103b7b41f2ba5858454a5e2a8fac12e78cbfe5adc2335d58bad2c408c77e393d2788cc9e93e244cb8da7c6b7b3e53c5faa009f1c93d939e911b247523e2affa9b68af1437ec306d29c56acd92336b6626c5571c923d288379b1132e04417c9ca115c4d01a688f4982649ccc5b0fe712a4727d1eda16242554e80484e44d62d934eeafeb7ef121a369ae8d34f0d8e66fc3ef4e20e8f8ca377744075679cbb6b967fd48d3c397cb5ea4f8c4158272575501501d0bce4331053832d2977a478890de36cec37d6eb9a0308c09138c068f598d88d0bb5b901d355280145d268c2c452eb12de404418ff7c1328c9dac27b5650ff4c615c"
-    y = {'code': 200, 'data': {'orderStr': 'apt_certno asc, apt_id', 'pageSize': 25,
+    url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caDetailList?qyId=002105291241564845&pg=0&pgsz=15"
+    w = {'code': 200, 'data': {'orderStr': 'apt_certno asc, apt_id', 'pageSize': 25,
                                'pageList': {'total': 10, 'pageSize': 15, 'list': [
                                    {'QY_ID': '002105291239451309', 'QY_SRC_TYPE': '0', 'IS_LIMIT': '0',
                                     'APT_NAME': '市政公用工程施工总承包二级', 'QY_NAME': '榆林永邦建设工程有限公司',
@@ -626,6 +580,18 @@ if __name__ == '__main__':
                                     'COLLECT_SOURCE': 'ZS##D361094546', 'APT_GET_TYPE_NAME': '申请',
                                     'COLLECT_TIME': 1671798824000, 'RN': 10, 'APT_CERTNO': 'D361094546'}],
                                             'pageNum': 0}}, 'message': '', 'success': True}
+    url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caCertDetail?qyId=002105291239451309&certno=D261047095"
+    data = "5588a9e126c91a28cc2f6813e37933695200acf48c974f58b6a551d08a5efbb212d9653f977f6d2b4ad915e7104d9f9aca86f905955999145581c45fefa6aa4f2993e0d4636243c14f784270d293019c9326ef89c7d18633451a8a403241f54fce33bf6b4581c3918f7e24706ad7fd98dd2ffcf3e264a3ea92d5f59eaa7c71cef24b190c3278873398002111b88a82f519c758307f1eff414eeb686f0386d8647eab0e4c08fab0ee9a9c52d162fce729e7fd614610f39f455d67659f0b39742ab911073ba0a748ce793ba3785d2019c8052945233278e2495eaf8b033ce7a70f8d5dd59bd0510ddd2cb49f4ff9e33c9432fa7ceb02077189b0e1136bbaeba9e4a67365a66a81fcd2efa9ec6c48a06e4d0641f37db8dbf45c3808ae802643e0381809655043072bc38bae30f54e6361131f9ba5ee91653134815f61ba534689e02b2f96227db635fd081af572a9dd4b898eb2e92bd8505796cc196a43cef8b5533c1d6ef6f24703280780ea97555e53e3f194c434756370eaf88dc24ffb9c5ef5478bd69986941dd6c020784b2e921b7c26fe6c0104266c3cef2acf74f3dc9c6a9773aa8c7064e1f741b70073ce6f8f6f428b900174d6ed4b19c2c4258d1c1a6c4fe36e6f963ecd690b40bcf37fa02ee35f1f461753287b094d72f71495d781411282738f8ece8c4a4ec928e77623791ff70524020a67da86a1698ea9052f372ba0939893f6f958b1018ad91692601d3ec3409cb3e6170b24ae6678dbb37d0a290fa0c3f6c71af979efd5a56b170328a4fde874b09eca8b282afe6dccea0b0e470d05c6dc5b91c83dbbeb45fc59c1bca7a3784c5165a7794a419995dee826a8d04821ad12ff3c32a2836aa0c7ca0a96fcf326cf45fb5112ae031e571e35a3c519d44d3feac018d17179070f9f4e423d9aae09de559cea7a138446c134d97530d693e4ceb29cd814e3e5b961a5f2d3291493cdf2895dca0d2efd22c93540272b521f67441c647b36965b8c187345c6b8194362d3deea1ef6e50b8b96b5ba789b42435cf75abcef88a467400228a972124e5c7bbf982dfe23245dd3e8797495b9858a5835e148baf85aaf7f535118564d36bb17010fe58534085237959bd1ed8c11cf9343c2189185721abee8040c7c428297d31e7fda1af807251b4cc8b3549aec5335ca1ebbf74d63aec07a9e2d7fd0c866305a480e5531d12e95acb91583c0150bee40bba62fb1f29a3b4260b06074beac0b36a80213686c0ec059aae76d0d361f25489039102d7c7f5b83768e3e1ec20237347d3e4215f57602293abc2e0eb76ef04215f70d5205c5c300b76ff9dea2f7d6d2987e9f5e15e828381cd21207864ff3303aa20cf7a36060638c5aff10dc60edc0e442cb905fe94e05b9d47dd4911d195a66947ff7d19b1ef01f69c73d9d8415af4143f3a95ef75739045861b6660682b5beca57ff75148a7d5db6f89b3ca86356c8a3a21a0a777c920bf1753c2ef1b8a2f71bef2ada18df546ffad6b062b9797a45b41af88dcda2ab7289d3f115b2b5746d326eb99f22ef21981a4fcd4024657313b52e2b4b772333c3a62e563fca93b8100caac8c168642b4f8e9ed04f120948fb9d6d66a1c42604d46af0b75a00388049ad6bf7d1ad987d3790904a0ba95937402be9672364000188086c012eee7d56ff22c30cc27c2f2d42f8c9c38f321f614f05f42af84afa4927afae96b8c118a67c159e8984be0584b9e3834f9c0aa6f3a2b5f42caf3a3c74f1bdc4f0b984729727b0ce6bd03bcea2ad0cc09103a0cd3dbd32028a2be19dce21eaad0036b92aacff6ac7abf7fa1b389b144d99950004d273152d75647fd71c60d48c0f132e22b30e73f51278c09a8fc4cbcb83cc5dec4ba23e23f98c723b56d0f702a90eed98db54becaa87185007c8e420bd6c1ddb8e4d2613714ce69d14142a595e83ebf4d85f3b35fe1fa3da0bdc7ac87a2f40c76dcd41e6a21b3bfd55e376f8b46c822771793991047a52b42320f1520393c9587bb092cec4fd160d902d1062d35764a476b2527c625b500edbf089569b1f3c7673703361aa02065564e50cd41a4f2a8a19cfbe955cb17e496e32778e872fbc0b10b356490f6a0378e89d308768887bec246232ff38769f5adf444b2af195b98e1ae8e2fe8f91ff0450a8447b067eeacbd8195456b53828d8cf4d70df12e4b41f1ccb1d30f82d093033f044a54ec2d199e590469a05723a18f628887687db3da06c98244784fa54d4b2d4c00830fcdb19698b44da00582bb66e83602d82c35ca7cc794cca29c868a703ccc59711b031096dc4029e5fef4525773168188c1d491f25e09bf93cdd79b6ababe87dc760298b9ed3b0c6dd3498b7e850a5d6180eeb157ffb4ec26f83dc4207fed2cdd4c391063f4f36079fdb0c72332224187a99dbc8b3c6c93b668456c771b5d673790f5cccf4d3df3bfb95d3bc936f4a26f2c398570818229f1be4293920da9b2647958e86234cf7a8873a76929ca41c5b5f9191b11263c219ddcc54ec9f99185fea086c13435c1ff430cad75e8a3f22dd47e7f62b77bb4f7758ef5b4a0297fe294049c05c3d184f1492c781fd8184f940865f246062d3446334504f68cea340fe9c41525449e1590db272223855fc441fb86227cf9c595655a919719984c2206be6d8250fa67fe2fb9649cc080c568efe0fed75f5356e652b257e7a5de55cba1837e810a06b452ef415f063ed614dbab0722e41f8094fe995c08dfca19aca6d8cfab424327f2240b82a40e2e26220aecb9ef19ed406c0272c37cdf9a13dbee53e99d36b2f8534749de1e77f44341c21bac85aab11e18d375969bd333f2a31a92e88439a25fdcca99be9b01d965f2d447adc580aa9c6f89987cedea7bd4881a21f710e64d30b72e97128e44bde546f7e37ed09ffb344ab47698293f6b87fd7526e6a15154b819f7d032e93be3cfa1be7f444de1cf0727ccab910bf5de6880aed48f5d396efc0008f43e5c6c1c202c7218a5db081874218ce5ea8ad788c6b17e830207ffda64ba30558104688c7cf7eb70e9be1dbd11e5b1ec6575a18788d045906cd57ea94f2f49665af90eed383544051b0d59b740366f344f159461e2aaa2e1190c26aa01f185a0dbcef5db8b9b3412f2e4d10455e8d0ac08075fd930518c2f07cc0ebe38c8eff79a3f7dbe4fb584588a50dead6a766d185f87ed2d139f545d4fdf0cdf74ba68408d3cfd1d152b8542e234f75b7d6af6b5f458bb7d3aaf33a3774d4af81e2f63454138509a649dad28abd0ceb5b8828cdf338d91b63ae154a5a60ac273946b62d378cb3e252330885c8269a321542ecda74ac00946fa9b33406ebd4de5f2b9330d4563b75c3fcac0b359c2f790d7d4e329be7f2b8b8feecd024dfb1fa691ee4a1e7f8acb59c356902ac81ef667d7e5cbb84739c31e8fffc3550a459f7c2aa26c29387d64091817edc59fd163236aeb796f9256cc5e34d3e1401f4ebdbc2662a8bef4ba265b50805f4f2822c4682c48640b2493c96efa85bc39b5f47129d17e01d67dae89a8ddf7c04befb25e42b8452425e4f064328e74e6f7581c4dfc594705ad1069b9faefc7c2c2bb4a95f01e9d6f2ed3f03a3352eea0fcaa1279ec4bc16dba7b509b0837ec6c3958893a789b23eeb57aba54262122f26f5a335737db02e19ee49904d4aece7370a3c1b58172b75f4663436000e3f26ac6831c0b0418e5a96a7c52ffa42fe9c0745cec2ac9ea98093cd43f61d787c00bd681814b49d346570500b1fefe5b3cd4be4b81fe1d69b85cfde77a8e2413c7dd0d1a91d8de5223e30c4822e5f49861cbf6e24874d593dad9fbc1d7617a168027d81d476739f8e107d88e978a39fc31e3917a8e1033008d11e47ca4fd6235ea1a6c57eed064193a3ed649045376aa2017a9a431452daf510a87fc38dbe50b5b43706b09cda270686cf4098c423d1657984ab561dbf2119c700243cbd719f78a35e81b785de54868353b3395aaefc958552bea66186164640d5443397757522e3fd2adae0b0119bf92d7c215e5cf00e6cb288046b35f40969e5ab51943843071c02ffb196d960aeacd3e2f21b25b3166a1034c8211efe910918ecc2d0a52ede42ed3353aab6df7c383e99e806a9b45cff41ad577e987358a45023771366b6d6062e40f2a1cff4d288692abc5a66defbab36d5dc5a41e915689adef3da5d3683157c5d758dfe4dbeb57b7d71ad8e30b066d7ff73e02d7d5b5cc6a5e77ee64dea7dacd1edf78aee596fe5f1fac9c29a060580c8ca9b7017ca50be325834c1b3bc100e483b92af94f239d7e900c776e62a5e4f18a0a41bafd84e95abb80dd8488a008fa4caec85fbfd43fd4cfeac4013f07e48079866e6977be7f57de98e47d326851a5cda498d918bd95e8ac4e854c068effd36faf62f8123ca17f6532d06b7ea1301e7287c3e7f4f367730425db49d62d2f7d8914f8d60c89fb2d19a5b04fc13758ccf4ef2c50b1f292e9f4ae6b1285493f403bd7ad28cfd9f76d79769420b05246c470e846ea373a916775793c8065819af49970fa42a72758ee279bc1b807c71f86d1c722f7ccd0fdc23c59dd2e80b40bb2eb674197827cc7f1461c19c2f7ab47bd9e61d40353f2a894d296a462d2c1016ff2812f3cb3bb8cca8468ae0eb3169765195cf0c328d802344a0aaf7a5f055ebf7471025a99b661bd68fba33714de0956d5a3db91b9679b305e44e0223ba9f1599c329aacdcf63d6929671348543693fed40634201ce047dfa1c839b80a55dacd0b296e9ee5a780b568cc3ad1bea3988eb65d0c999203dd3231d2314cc9b77c0986684d47a306e91ec4867f45808d6f3b0b6c19db369a20c7bff2ac8b043198dcaad7cc3c3b984a541e2527b9bdb5eb08819ee5bb21ac764b4ab18a6620936733f5e03334b7cab69642582815203d7918b5de72e717c17b47f4b5a324c78cc067381943f067eed01aae40446deae56796f160b46549f0c90b51814d95729075c9f09d7e6cfcd966ad55167248e27bccbc934a59979caa4ae5441aeb10681ce663d5850dcb52a75e3a1230497c587aeecec38891c4a572e4e601094f1239afe5e716ba8d6bae393f6e02be9a2333cef786d30ef66d5ee2b8b3abaefe3cf7b28ca6a5ef556db634fb44c60ee6bf3d37eb96f3e8baf60b84d17f892d51a5f24ca645d5c3e02e9fe4253c2437bbe684ed0755018d280316ece893da0092d054c9cda7108fd491bfed26805ef13cc8e71896fccd557322f0fd608f8728aa1c8786f3f1846cf93f98f33580bd37f69deb60b7e2b7d18b4b267e43a0f2d6bcb242b3b4786e2a50cded2348bd61e1f335d3cedf2ed4c2694c179dd947cc5aff8284917296a44d6f483c1711be0f09a79df8ce0697766ebc8e565553dd14e0933d84ff5f5c40170305370250f87961914a5bfade1f54626d2c61737566aacaab4bfd188fc5dbd4e7b83c7a7e86193141bc73e4f78a442da664a7a58c0d1a3cf1c47ecda8e126a803866ae990bcc21fe359ff4ce2f74fbec9c053379b60e78a9d375504c334183a5f4a4c27c39ebd0a3510703cc848aec261b757ef072aed07e0dff106370cc2d87691539f449d9c5882bd2c309a113fd5763aa2fd78d20eadd4a0c7decd3afe8013799aa583536b1c2545d56303ef24da59e0f31e5849b6cf85d453cbc5642b1cee1ca213071526864f3b9cb65f65b98937b4e7ef92f5f68d3228af9e3791143c354334002c98a5959f274e64a30b006b38fbf10326a0638399ddd59f5ba024b6a8d2eaa710bd977f840072269ec863467f3301cb0eaa8f4ecb13336517608e2b3cccce9b877982256b9e68c5f6984bb60834d46b1e88b7aeab68cedc19c5bc0a91507dc4381c53aee40bf59cfdefcc0b98ac40adb87036ced2f8076f4dd03d90c8e604b411619304b92dc4de095b560cce39587d9fcb109f3a1d84a65c88a17d5976621a1b6a1d572b1701e6659d14f53eae0ced86d4932d2d56eec90edd3c60e2bc3c99dda2d0d1c88e31fb52541a5830cf8350f63e2368cf18202337390ac4f32b5ba81c9ce5528266a8494aae71e3b6c76b2117afa86902a249baa0070d1105ad7b8da14fa0ac83043a73842408628969d9625c310e1d114b5eeece3fed89312fed01c5af37ff300be2a6b070c60add8f61a078a749a568f9f0717680a4f9494d8b7ed8716e988b0a3de8835c56f0817172231e786a94110664e73430dabef5c2aa946c71735aff888eda7dd3d898506fcffc3935d724eafed998d41e6e2d82b043908ade104cf4b117331b9e6f6124b1ede3e3923789bcef2b360428c08d2ac4a17bf2163e925e15f59e2037fc41fb45169004eee81b05d623224e1c11df5fbb980065071062be0be5e2078425aeeac23100504336dce981181a7daa43ab9e9848656133ce5cc7cde0befeab88ade6b432495dd3a544850d8ec3f7a71a92d5c9310f0d33a5ec9f72ef2efa21511d303444a3b79e5b2bbc35309652e21bb4ebb4c49e97a0e8c01f9b2001d4535f170a1bad9834c4bce399e857f6ad4d62bf6bbed2b40145efc3b9a36db494df6760ab1c69de9e21f36760e15229996de33b114b92e5303cd1e7e66209912ce9c61573144ff3dc4ba0b5aacbd8a1a789524c9736fdc5bf64c5f24030c5aafaf0937cd08af9aa53870465d9b8b9348449a9f2d68716cffab093c2737f0e192339e87c91505ec083838c5258e2792e1bc8193bd08280c28f3207a91d1e8539c76ca972f309343815bdbdbc191d31d9c029482a5fc230b79863e2cc459732c64aea70c8163505ced4e50fbcc3ab72ebbff0727eeebd6a390795d5170d54f2cc0e2ecd867fc41994dfda977dd78dc98bff4d33c20374c6b28317ba31f5853eebed9cfd8b141ec4be8b1c23619c91546b873ac22fc724165cda7ae0f7ffc89e48a71cec7c41c29b6937197cf192638962571f46c1853d790c6a4cb8425cd1f5b451304586f8f99c18bae5e6b5715cbb5b913c083ee770dc88abe30716baa1c32ac413b0a05a51a4ef8ab9474046d9be1df2a22124d2df632667fe3545715067587275bc4d600e353fa74dd14fb51d7f706526ea0f383a5c5498718a0f43bb7a4922878434bcc7fa8e7e7d21cb995733a634c041d86682c72571ccc505be77d732d661297268b904f5c7fb024948379d3e87e4c90037a3f9c4b76ca0e8401b1ecdf15c94f86852a43a348733f89c2a3a720c6a2b4b871abc3a1080a848555cebac129508778378ecc484a0ac7ae75a652549efd39b9263150592d170343bef62bef3703183a5dd0f0ef76f8e96eda770034fec8c80cbfa5773d42d16d94832296786d52341848c2374d5cd575d49a28724aa0b2535dc119860e385a79961c35ae7dc881a0e5a527b13bbaa6652e8c489f6a61e583ebdd7acfceb136ab0ad8effa862c8c4967d0fe9576d22fc5ee237a96ae6406af4730ceb6f4511d3f1044385256becdf321db393dbb5e719a08e8c0b58c1f450580826cd662851b32b2ed1d8eb6ea71aaedc167123873b27ac41c6713d68c5859969cdf7363327181ca936b3890564bdd74765a562602864a83538b5295aaf88aeb20333eb99bc945678fc5296ec2a0b68ca26dc6739fa1e4d07cf39d636a1a0decd2184d27552c3c507e8e579d769ee609dff5ef2bfe031818b8e33cfb6f56a9a9a48ac5bfb0b2cd3d905288c6f77148551f26d4faebdf3bc3e2dec521c3406c0e46afcd2c621d4c83c745e9bccf3a2afd3fd62e478525b9338f2dac5054b8687a2cbb07cb4429eaa0032ff83cf0d1767b01b12cfca9d5d0a35b0df86dc4e209021ef84625858e9ad3fb46b23f1fab4d0c6030386b5e528fad2a3bc59b9e15d5fe7200b1fb88c8dc4b593b74a20498fae242444e507dd673e34baff458a543dd087ef5317e1eb0328f1cb9c0942d7a11bac2cf14bec910bb6588874cc706796616a0aeff2e001eeaa2442f0498308f569267b8503e309b2ef964f36eb1983b057b930cb3026a61ca718c067192b998c829f538dd5c7b8a263d92c9d9b53b953cce3233060b2982d943f428510df7f84f290b225ab02aebc7301115432cab5a8ffbdd7cfb7d3dc069c25df53851fcd5401a763d82ec233f4690f152b8cc4b5a2819010bbff3faf21c3dd869d297e5297b13345c9771d40c100452767e42fe67f57667c65a34197688410e470cc8cb9676d5fe5ede9f41e757ce1bc86457606b7ad8ebe2dd1e2cce4123e21479da8a5c13b7af7d041a21678bdf69628dce876cb3220944704b59966446fd7dfcb95acef5ad12f7b87c262bef3b9fca7dc205e618806b4bdc9dd0bfd4452da0dfacdb7e19cbd4e993fa9acec86b46304635754089367dc00b8c983b29312d28113c4ce79681d95bf1887892321413583f9582c42279bc08f5eba35c4da3656e7707e10ccfdd195832bb5d83b6ef126832404402010865839dd2f6268d51754cfe854a56925860f9ef6f8a116b1ead14d4778485155e4070ba2dc71fae663132435d385a81010ac776828b7227d0b388ded48a659ae231b6455c9fb999f1981d236134ee2169d864624e8aaa6520315202f328e984cca8f05ba16940bbcd96758fe1718b70748ada79794c8828f9216d77c6cce049824292775a6697da2f2b8d33e334ce49ca6620e87b598fa9c87c04a86ea5a78d21f070742a22892983c65c85a295b32ad938ae9fd4ce2713db398dae20db54414af2a31e7858f0769a85944dd0d53cb7d44aef5c5c56ea6931e5e73fbe9369f60293c8ad2f7d134bf59e3d26393155669dd956ce3720a4e2fcbd26999ca0334c42a2c5f066da3429ffb984fcc8d12806fe805659255345fbdb17362d445f6760227496ab87eb1f9ee35932c7f0ca6fc59a5ff14693f296972e70b18eb0cd5d6dad3c9a0bdb0311b3bcdf93d40d7ab56ec71bab333bef627a5b58430673e65cf8638972f8e2d1c21d137080dc2044a975ad0bd8d772a527f6531600a11bb8402a6ee307ffb7ba95b285df54b6764f0fac1230dee51636f6f43827065f8b4824be3e44e189cb63c669896070a42329ac0348e0631f055b735265596332c6924552bf564ec12e7858b8451daf7c706c7eb61b80cd5bbc0a7ed9a4e47ab0622218c241270bbbb2f38e05e4f07b2cbccebca897c743897ff27b35bdf45815850c45474c1d44833f6fa2d98c9848573886eecb48e82d97adb8499f0fef082019a2a72991ee203c395adaa2588953886e04e77f537fe40441fe6d7c4bb43d8ef6c628835cfa276c48ee71d28a99db046d5c90c6bcb30d7cdae4dc827ed1822baff28bacf169b354c99a66274b721be14564e72aa0d688054af2f76b9bc488436532ed00bcb2f5c8eaafff4c80f6db5971052b01c9f1e7eb1efbfbc12a630756163c845a8f5d62ea581bb54b11bfae9e217d7b7cc3e748702ec8d705558863bdefeb9aef1c079f66a8cb2386780598decdd41a36a58554b9e813c6c7b7659cea702e0018dfc8f798d0c1a1e11e5dd92e9628d5d894cc5ad761ea8c6c4940cfaf74bae84f10c87c078d2ef9f26a9fad2b72e974aeaf79d943ef2f1446700631fbde5bb980de514760aed5bb4bbcb202fa25ace700ccf9785cb6bea37127e51135c941e16bbbafdeb3da5abe650ed3df4a747fc7f2739262e63aadc7a22a9cfcefb6ebd80f01ed1adcad7b835647ed499f115f1a73b928f79b9cb38022cc07757a7612dc7734c82a1cef464424f90fbc8e9283019718a53f9b4c36ec10a1e6b00ad6f3583fcf1458b298a77a3bebe6b3e83a8781792b8c0a6f61fa8a422389fd232fa7747b25f0e5db5ad11683c04350e020d7963474811ecd2f5c5a69ce846e1ab5eb09397c1ca529d9acbb7d982cd2a5200f636f49b817fbf1fc51a0a92def7a59ad2b12a9650f0c257d421498c24b9e96237e6a60cc080adb44ac6153d66328a6638c9a11a1ff515285aea2bb0c2f81e7b8286c6ba0993e0e52ec1f21d396ada97b94f992597526e54e1ca22dc503ef9217cfed18b68de2475f5634730497061bf8bf62896a72f8d22ae13535ecb05c3d2c09842e48bee3c6c74136386f7232df049cbb06670882b18e692ab5b8d88343d47f9ad41abe5b6555483fe3b33ff7fcedbb0c9b4fe10de4f1e6f63c8fc3cba60b5f887d45708def81328ccd8a69898a3f2d0ad0c08c3ae2a3ec4307f4665893dcbf9a8acc8f0ad81ddd3114862feb2c48919a429887ed072630f20b33bb7967afa7de75760fd650e2630f7be03067124103b7b41f2ba5858454a5e2a8fac12e78cbfe5adc2335d58bad2c408c77e393d2788cc9e93e244cb8da7c6b7b3e53c5faa009f1c93d939e911b247523e2affa9b68af1437ec306d29c56acd92336b6626c5571c923d288379b1132e04417c9ca115c4d01a688f4982649ccc5b0fe712a4727d1eda16242554e80484e44d62d934eeafeb7ef121a369ae8d34f0d8e66fc3ef4e20e8f8ca377744075679cbb6b967fd48d3c397cb5ea4f8c4158272575501501d0bce4331053832d2977a478890de36cec37d6eb9a0308c09138c068f598d88d0bb5b901d355280145d268c2c452eb12de404418ff7c1328c9dac27b5650ff4c615c"
+    y = {'code': 200, 'data': {
+        'rawCaDetail': {'APT_CERTNO': 'D261047095', 'APT_TYPE': 'QY_ZZ_ZZZD_001', 'APT_QYMC': '榆林永邦建设工程有限公司',
+                        'APT_QY_ID': '002105291239451309', 'APT_GRANT_UNIT': '陕西省住房和城乡建设厅',
+                        'APT_GRANT_DATE': 1488470400000, 'APT_EDATE': 1703952000000,
+                        'APT_BOUND_PRINT': '市政公用工程施工总承包贰级,建筑工程施工总承包贰级', 'APT_MARK': '-', 'APT_CHILDMARK': None,
+                        'FBPRINTNUMBER': '04709', 'QRCODE': '9EB94E5AD8824138A78412477B6EC170',
+                        'FBQRCODE': '9EB94E5AD8824138A78412477B6EC170', 'APT_QY_GSZCLX': 'QY_ZCLX_1592',
+                        'APT_QY_REG_MONEY': 6000, 'APT_QY_FR_NAME': '马拴柱',
+                        'APT_QY_REG_ADDR': '陕西省榆林市榆阳区金沙路汇金绿园2号写字楼701室', 'APT_QY_REG_CURTYPE': None,
+                        'APT_TYPE_NAME': '建筑业企业资质'}}, 'message': '', 'success': True}
 
     # 人员信息
     url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/regStaffList?qyId=002105291239451309&pg=0&pgsz=15"
@@ -657,7 +623,9 @@ if __name__ == '__main__':
                                             'pageNum': 0}}, 'message': '', 'success': True}
 
     company = Campany()
+    data = "5588a9e126c91a28cc2f6813e3793369e955f2eef38f9a3ae7c35041e63b89245df5e616a17f7b1dece3c8def8176f8a800fcd1c105e7bcb83c597f820c84062e49fbadc378c603d150d1294107ad5978339d37a47033b6d5ec3f3d6e90260d89853cae3fa382c16e1f2b1b323759171ef4bba552a14fd1949569bae7fd4550f9eb33b765545a9f9c2b8251b4b0b50bdc7be79e49ecd217f3a1232937a4fe627cc7a5027ec1677b3e9ba07ceb6d27a1bb81e7fd7dea0a9931407bddc7514b885e5962eec35d460d41a458cda0898f77081483cad921429d6e79350c4ed79ede00eecfaaffc98c561d36a903a3647c826d8b6bd16246363bbdd2412fcb2f49815fc701691fab1845b355c8558939385e3f1b50a30e7cf1eab3eb85ae8e4e947000c993a90e11982de786cd3515e494fa89d6c76e8a4d65069826829ccc5ae7fee3b2e32bb8567810bdb95dce2e04aef6b57b908ccc2f9184ed8e37739cc58636ce686564ef4f8a3645c2714df4599407798691337de81251873c8e01b56c13a04b311ba44e00d7683542d417ad8350541c2bc4b2e1642c1642b30a2c2dda6f4401edc84227bee922bfbbfd7c5f5ca2846124d5e70e2c364bdd5b25184a0312eaa78213966da487706c8a002a493a5aa07cf30af75569edcda62e937afeb6267e99dad23fe84d852040ef8c1760bd1709184191fc1a26cecff1545b118a9b3d58eb10d2adc7f4b64888c2fed26fd43cccfe427a2a6373b795d434365c510a2cc05ea73a311878b08cb4105af21e5d40dcbd3d5a0e3fa7be1dfa08655733142294b2a6da648d4418d1c81a831df4053ed853ff1bf61ed3df4d218993e8aadf34c66e86543c0d190a71dcb95a4228ff436c25c47a24476c45542f5a22b7df46c6a00c92892b65276cdbfdf6b28b5fb6aba987abb0a07f90e4caa4afad168cff787bcbbcb96b9e938dcc61e1d152e32cd10b51bee884dc8f20838d4cfe391ac18c2685d7bb487784f59f321334e93b65d58ebc4552d0eeb29e277dd60c8d2bc1b4af3510cf342c190f9b91b66c1ef09072dd78bb01830d6984df71bdcdf27e214ee65acb69fefa86a20e67dee2d5ffe29979fe3c39d07bda925c3d7b8b3fc1cfde2eb"
     print(company.decrypt(data))
+    print(company.run_detail(Params(province='吉林', city='长春')))
     # exists = list()
     #
     #
