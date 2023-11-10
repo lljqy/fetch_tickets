@@ -5,7 +5,6 @@ import secrets
 import binascii
 import warnings
 from pathlib import Path
-from itertools import chain
 from datetime import datetime
 from typing import Dict, List
 from dataclasses import dataclass
@@ -15,8 +14,7 @@ import pandas as pd
 from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, InvalidSelectorException
+
 
 from utils.wechat import Wechat
 from utils.proxy_utils import ProxyHandler
@@ -87,9 +85,11 @@ class JZSC():
     _region_code_url = "https://jzsc.mohurd.gov.cn/APi/webApi/asite/region/index"
     # 获取资质名称编码的地址
     _apt_code_url = "https://jzsc.mohurd.gov.cn/APi/webApi/asite/qualapt/aptData"
+    proxy_ip = '127.0.0.1'
+    proxy_port = 33210
     _proxies = {
-        "http": "http://127.0.0.1:33210",
-        "https": "http://127.0.0.1:33210",
+        "http": f"http://{proxy_ip}:{proxy_port}",
+        "https": f"http://{proxy_ip}:{proxy_port}",
     }
 
     def __init__(self) -> None:
@@ -99,14 +99,14 @@ class JZSC():
         self._region_map = dict()
         # self._apt_code_map = self._get_apt_codes_map()
         # self._ips = ProxyHandler().get_latest_kdl_free_ips()
-        # self.refresh_cookie()
 
-    @staticmethod
-    def _get_selenium_config() -> webdriver.ChromeOptions:
+    def _get_selenium_config(self) -> webdriver.ChromeOptions:
         # 浏览器适配对象
         options = webdriver.ChromeOptions()
         # 设置无头
         # options.add_argument("--headless")
+        if self._proxies:
+            options.add_argument('--proxy-server={}:{}'.format(self.proxy_ip, self.proxy_port))
         # 设置代理，后续完成
         # 屏蔽'CHROME正受到组件控制'的提示
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
@@ -131,16 +131,26 @@ class JZSC():
                 continue
         return result
 
-    def refresh_cookie(self, query_id: str):
+    def _refresh_cookie(self, query_id: str) -> None:
         self._cookie = None
         options = self._get_selenium_config()
         driver = webdriver.Chrome(options)
-        driver.get(f"https://jzsc.mohurd.gov.cn/data/company/detail?id={query_id}")
+        while True:
+            try:
+                driver.get(f"https://jzsc.mohurd.gov.cn/data/company/detail?id={query_id}")
+                break
+            except Exception as _:
+                time_print("爬虫被封，请稍等...")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+
         while not driver.execute_script("return window.localStorage.getItem(arguments[0]);", "accessToken"):
             continue
         self._cookie = driver.get_cookies()
         self._access_token = driver.execute_script(
             "return window.localStorage.getItem(arguments[0]);", "accessToken")
+        with open(self._ROOT_PATH.parent.parent / 'token.txt', 'w') as f:
+            f.write(self._access_token)
 
     def _get_qy_region_by_province(self, province: str) -> str:
         return self._province_to_region_id.get(province, self.ERROR_REGION_ID)
@@ -230,7 +240,8 @@ class Campany(JZSC):
 
     def __init__(self) -> None:
         super().__init__()
-        self._access_token = ''
+        with open(self._ROOT_PATH.parent / 'token.txt') as f:
+            self._access_token = f.readline().strip()
         self._ROOT_PATH = self._ROOT_PATH / '建设工程企业'
         self._ROOT_PATH.mkdir(exist_ok=True)
 
@@ -341,30 +352,33 @@ class Campany(JZSC):
     def run_detail(self, p: Params) -> None:
         """爬取详细信息"""
 
-        def _custom_get(url) -> List:
-            pass
-
         def refresh_headers(query_id: str) -> None:
-            self.refresh_cookie(query_id)
+            self._refresh_cookie(query_id)
             headers.__setitem__('accessToken', self._access_token)
 
         def _crawl_company_detail(query_id: str) -> pd.DataFrame:
             com_detail_url = f"https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/compDetail"
             while True:
-                response = requests.get(
-                    com_detail_url,
-                    headers=headers,
-                    params={'compId': query_id},
-                    # proxies=self._proxies,
-                    cookies=getattr(self, 'cookies', cookies))
-                time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
-                json_data = self.decrypt(response.text)
-                if json_data.get('code') == requests.codes.request_timeout and json_data.get('message') == 'token失效':
-                    refresh_headers(query_id)
+                try:
+                    response = requests.get(
+                        com_detail_url,
+                        headers=headers,
+                        params={'compId': query_id},
+                        proxies=self._proxies,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                    if json_data.get('code') == requests.codes.request_timeout and json_data.get(
+                            'message') == 'token失效':
+                        refresh_headers(query_id)
+                        continue
+                    df_cur_company = pd.DataFrame([json_data.get('data', dict()).get('compMap')])
+                    df_cur_company['QY_ID'] = query_id
+                    return df_cur_company
+                except Exception as _:
+                    time_print("爬虫被封，请稍等...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                     continue
-                df_cur_company = pd.DataFrame([json_data.get('data', dict()).get('compMap')])
-                df_cur_company['QY_ID'] = query_id
-                return df_cur_company
 
         def _crawl_cert_detail(query_id: str, apt_cert_nos: List[str]) -> pd.DataFrame:
             cert_url = "https://jzsc.mohurd.gov.cn/APi/webApi/dataservice/query/comp/caCertDetail"
@@ -378,11 +392,13 @@ class Campany(JZSC):
                             cert_url,
                             headers=headers,
                             params=params,
-                            # proxies=self._proxies,
+                            proxies=self._proxies,
                             cookies=getattr(self, 'cookies', cookies))
                         time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
                         json_data = self.decrypt(response.text)
                     except Exception as _:
+                        time_print("爬虫被封，请稍等...")
+                        time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                         continue
                     if json_data.get('code') == requests.codes.request_timeout and json_data.get(
                             'message') == 'token失效':
@@ -410,11 +426,13 @@ class Campany(JZSC):
                         qualification_list_url,
                         headers=headers,
                         params=params,
-                        # proxies=self._proxies,
+                        proxies=self._proxies,
                         cookies=getattr(self, 'cookies', cookies))
                     time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
                     json_data = self.decrypt(response.text)
                 except Exception as _:
+                    time_print("爬虫被封，请稍等...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                     continue
                 if json_data.get('code') == requests.codes.request_timeout and json_data.get('message') == 'token失效':
                     refresh_headers(query_id)
@@ -427,7 +445,14 @@ class Campany(JZSC):
                 apt_cert_nos = df_cur_page_company['APT_CERTNO'].unique().tolist()
                 df_cert_nos = _crawl_cert_detail(query_id, apt_cert_nos)
                 df_cur_page_company['QY_ID'] = query_id
-                df_cur_page_company = pd.merge(df_cur_page_company, df_cert_nos, on='APT_CERTNO', how='left')
+                common_columns = set(df_cur_page_company.columns).intersection(df_cert_nos.columns)
+                on = 'APT_CERTNO'
+                df_cur_page_company = pd.merge(
+                    df_cur_page_company,
+                    df_cert_nos.drop(columns=common_columns.difference([on])),
+                    on=on,
+                    how='left'
+                )
                 df_cur_company = pd.concat([df_cur_company, df_cur_page_company])
             return df_cur_company
 
@@ -436,18 +461,33 @@ class Campany(JZSC):
             'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
             'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
         }
-        detail_ids = list(
-            set(chain(
-                *pd.read_excel(self._ROOT_PATH / p.province / F"{p.city}.xlsx", usecols=['查询ID'], dtype=str).values)))
+        file_path = self._ROOT_PATH / p.province / F"{p.city}.xlsx"
+        df_raw = pd.read_excel(file_path, dtype=str)
+        detail_ids = df_raw['查询ID'].unique().tolist()
         df_company = pd.DataFrame()
         df_qualification = pd.DataFrame()
-        for query_id in detail_ids:
+        for detail_id in detail_ids:
+            time_print(f"开始爬{p.province}-{p.city}-{detail_id}数据")
             # 企业详情
-            df_cur_company = _crawl_company_detail(query_id)
+            df_cur_company = _crawl_company_detail(detail_id)
             df_company = pd.concat([df_cur_company, df_company])
             # 企业资质和证书详情
-            df_cur_qualification = _crawl_qualification(query_id)
+            df_cur_qualification = _crawl_qualification(detail_id)
             df_qualification = pd.concat([df_cur_qualification, df_qualification])
+            time_print(f"成功爬{p.province}-{p.city}-{detail_id}数据")
+        with pd.ExcelWriter(file_path) as writer:
+            df_raw.to_excel(writer, sheet_name="企业数据", index=False)
+            df_company.to_excel(writer, sheet_name='公司详情', index=False)
+            df_qualification.to_excel(writer, sheet_name='企业资质资格', index=False)
+
+    def count(self, dir_path: Path) -> int:
+        ans = 0
+        for file_or_dir in dir_path.iterdir():
+            if file_or_dir.is_dir():
+                ans += self.count(file_or_dir)
+            else:
+                ans += pd.read_excel(str(file_or_dir)).shape[0]
+        return ans
 
 
 if __name__ == '__main__':
@@ -623,9 +663,11 @@ if __name__ == '__main__':
                                             'pageNum': 0}}, 'message': '', 'success': True}
 
     company = Campany()
-    data = "5588a9e126c91a28cc2f6813e3793369e955f2eef38f9a3ae7c35041e63b89245df5e616a17f7b1dece3c8def8176f8a800fcd1c105e7bcb83c597f820c84062e49fbadc378c603d150d1294107ad5978339d37a47033b6d5ec3f3d6e90260d89853cae3fa382c16e1f2b1b323759171ef4bba552a14fd1949569bae7fd4550f9eb33b765545a9f9c2b8251b4b0b50bdc7be79e49ecd217f3a1232937a4fe627cc7a5027ec1677b3e9ba07ceb6d27a1bb81e7fd7dea0a9931407bddc7514b885e5962eec35d460d41a458cda0898f77081483cad921429d6e79350c4ed79ede00eecfaaffc98c561d36a903a3647c826d8b6bd16246363bbdd2412fcb2f49815fc701691fab1845b355c8558939385e3f1b50a30e7cf1eab3eb85ae8e4e947000c993a90e11982de786cd3515e494fa89d6c76e8a4d65069826829ccc5ae7fee3b2e32bb8567810bdb95dce2e04aef6b57b908ccc2f9184ed8e37739cc58636ce686564ef4f8a3645c2714df4599407798691337de81251873c8e01b56c13a04b311ba44e00d7683542d417ad8350541c2bc4b2e1642c1642b30a2c2dda6f4401edc84227bee922bfbbfd7c5f5ca2846124d5e70e2c364bdd5b25184a0312eaa78213966da487706c8a002a493a5aa07cf30af75569edcda62e937afeb6267e99dad23fe84d852040ef8c1760bd1709184191fc1a26cecff1545b118a9b3d58eb10d2adc7f4b64888c2fed26fd43cccfe427a2a6373b795d434365c510a2cc05ea73a311878b08cb4105af21e5d40dcbd3d5a0e3fa7be1dfa08655733142294b2a6da648d4418d1c81a831df4053ed853ff1bf61ed3df4d218993e8aadf34c66e86543c0d190a71dcb95a4228ff436c25c47a24476c45542f5a22b7df46c6a00c92892b65276cdbfdf6b28b5fb6aba987abb0a07f90e4caa4afad168cff787bcbbcb96b9e938dcc61e1d152e32cd10b51bee884dc8f20838d4cfe391ac18c2685d7bb487784f59f321334e93b65d58ebc4552d0eeb29e277dd60c8d2bc1b4af3510cf342c190f9b91b66c1ef09072dd78bb01830d6984df71bdcdf27e214ee65acb69fefa86a20e67dee2d5ffe29979fe3c39d07bda925c3d7b8b3fc1cfde2eb"
-    print(company.decrypt(data))
-    print(company.run_detail(Params(province='吉林', city='长春')))
+    # count = company.count(company._ROOT_PATH)
+    # print(count)
+    # data = "5588a9e126c91a28cc2f6813e3793369f7b54741889253ad1b1e7bf1f1f612a50f892a28d9cbb8e4ee40f4af5d9005c7b167d827fa9909c42d22f740e41a86d1ffddff057235a00688f0299c93167d006b4ef5f39595e70dd0b51216de353f98300d31ea16d8e989ee386171c6821bbd849b02cacc420504ee24b750577a6e8fc3a777de864cf85dceac0ec8c233976774996d9abea06f0eeb95be0ac2d1931cf3eca057ce8c53e2e075b567f96471ec522b035b83710c88756004c85c379c647e3b174d787041c6b4560e8f0f2d9e2923e043e3e1db1cd447303b68fe5a802cfebedbcb5fd71b749d465fc7cc1190c164d9b24db61578e53f346b2cbd6362b4a41f042962ebc17a99763bcf3dd9be6409c122918f6b45078c77b2465f7b852ab800bc5aec8a18303df1b1be053697bc226e5cdeb0b26053f3b1729a552d142dcc5f5fcd26745b8ac27a4ceea11b5443bea5d6b846e0b692044ff78d7fb1f9a5949ba2990670f3c2357a4e24c51a1e302e008852756c781b22d6ca0edea8ba92fb6ada74911eff624a52b4aa9a2bef56e835c74cccbcf973a2c289034788ebba530f1353c2130e7ffa688f7813680c2a0ea0c0ccbbc83d4683631f9fde215f0bd70f35c271b01b3d239faa4c087cd695db63ab0aa174d03b22f7e53d054ea1a2d7795d9fa3804d2ceb30785409c23ee37a9a2cb50911f797c2d8f9a24e0b59d612324bd9556589328aa229f8e9219439635b7e942559d40f3b75b797ca1d827fbeb47bf57560bcb389fcc4fa73e61ab8aae17dee673029741a1279764de400c9d416ec8034d3543673a8a612487ffc6c66c0a7ee2acb8d0dcefbfff9335fac8f64ce1f49c2b03c354cb23d82311b61d8baaf0bccc9af0312990087bde03e3564b9763a95b13064e5e7c2475a36fbcea51eabf8b93a49517ea47a22b566ba63159fd9a331abdc1983756589620b8189f2da77da8450c58c9ebec17e15e64648e4bb36e00e7b8d8e7516f8a259cb0a0f3d37ae1605803e1d26c40cf72e60fc4a5a3f0dcd5854f8ff0f45ed8a37947dd9e4dc4f1e390545100c3423b46fcfcf518689f5aea382500dc20bd1736d14a7cf68397481148876ea0bde565c88fd3733ea8975d622adb32d44865d24692d1dd6f4d4438c91418cb1d8033e7ffd098f93cc3222b174d4c64d6a5059146358341d09e4290b87d98ea71906a16f929792155ef65f3479da72b4ce4c3eab1d09d46583ca0cc05bc8809e66e02f60f40fd6d5e1c9801ec80f29269af4390d8dcba6e328b8e3378b1f00f217a846c463a13149b394cde2e2c6935c8e3a0a1f3165d0830e333942ff3f30bf6dd736648b0e49d875edf981b7bf1eacc36292ac7a530d45438440ddcd56e19ae6715ea0429a827d099b0e602be60b99fa222496c96ae8e743397c0dcbd7869f610b17c8e81d255ec12ad1c9baec0dd888940a8bc52588e1dda2a29ff15ef8efd1dd3d57229abab972c7b5e506a8d9c8cae585984584e47d2ad72da524493b42102c8b7f03062f5f1f248f7b9e874a1ed2370d64401e4292dc04548509d25aa9b4ebda62816c0af9185628da61093ea0b49d77e8e07efa8e9ed6d394d4f3fd8397c50a6090e82293ab49136f18ef0c36c742e10311c9c3d9dd43c2161f2694583ee13de33a95977393d8ee5103b043418114cd17a4cfe6738090cc7f83fac3a65fcc6008c2c9d9cc8aa1cbf609d1198a669ba2650106c35bec44dc1268f34bc9ec6386455a2e7a712ce22dcf73d72b553f942d3db0cb892775dbdaaf96e978c5a110b5e424fe0701de31d98cdfa9e6d316ea0e2d30c6141ae8a18e2d1cf37f3ff4e121f2425bd5cc19cc4aeb1b36d3c55fd0782117856e6901e0c48338acf053cb832b81498ff232b55ab7564b53c19fdc67defc3af4dac80e9120465a732eed47e3c4eea045916e15aeab59f029bffca43e513a37d95138615a6d36a2059c0a37a16ed43c3cf51336"
+    # print(company.decrypt(data))
+    print(company.run_detail(Params(province='云南', city='保山')))
     # exists = list()
     #
     #
