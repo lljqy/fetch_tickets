@@ -15,7 +15,6 @@ from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
 
-
 from utils.wechat import Wechat
 from utils.proxy_utils import ProxyHandler
 from utils.common import TIME_FORMAT, time_print
@@ -122,14 +121,12 @@ class JZSC():
         iv = bytes("0123456789ABCDEF".encode(encoding))
         keys = [bytes(key.encode(encoding)) for key in ("Dt8j9wGw%6HbxfFn", "jo8j9wGw%6HbxfFn")]
         n = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
-        result = dict()
         for key in keys:
             try:
                 aes = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
-                result = json.loads(Padding.unpad(aes.decrypt(binascii.a2b_base64(n)), AES.block_size).decode(encoding))
+                return json.loads(Padding.unpad(aes.decrypt(binascii.a2b_base64(n)), AES.block_size).decode(encoding))
             except Exception as _:
                 continue
-        return result
 
     def _refresh_cookie(self, query_id: str) -> None:
         self._cookie = None
