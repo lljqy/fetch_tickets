@@ -16,8 +16,6 @@ from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
 
-from utils.wechat import Wechat
-from utils.proxy_utils import ProxyHandler
 from utils.common import TIME_FORMAT, time_print
 
 warnings.filterwarnings('ignore')
@@ -490,7 +488,7 @@ class Campany(JZSC):
         df_qualification = pd.DataFrame()
         for detail_id in detail_ids:
             time_print(f"开始爬{p.province}-{p.city}-{detail_id}数据")
-            detail_result = self.get_detail(query_id=detail_id)
+            detail_result = self.get_detail(qy_id=detail_id)
             # 企业详情
             df_cur_company = detail_result.get('company_detail')
             df_company = pd.concat([df_cur_company, df_company])
