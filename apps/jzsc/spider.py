@@ -1172,7 +1172,6 @@ class JZSC:
         self._df_results = pd.DataFrame()
         self._df_detail_results = pd.DataFrame()
         self._cookie = None
-        self._apt_code_map = self._get_apt_codes_map()
         # self._ips = ProxyHandler().get_latest_kdl_free_ips()
 
     def _get_selenium_config(self) -> webdriver.ChromeOptions:
@@ -1346,7 +1345,7 @@ class JZSC:
             tasks = list()
             for province, _ in self._province_to_region_id.items():
                 city_region_map = self._get_city_qy_regions_by_province(province)
-                for city, region_id in city_region_map.items():
+                for city, _ in city_region_map.items():
                     task = executor.submit(self.run, Params(province=province, city=city))
                     tasks.append(task)
                     task.add_done_callback(handle_exception)
@@ -1380,6 +1379,7 @@ class Campany(JZSC):
 
     def __init__(self) -> None:
         super().__init__()
+        self._apt_code_map = self._get_apt_codes_map()
         with open(self._ROOT_PATH.parent / 'token.txt') as f:
             self._access_token = f.readline().strip()
         self._ROOT_PATH = self._ROOT_PATH / '建设工程企业'
@@ -2183,5 +2183,5 @@ class Project(JZSC):
 
 
 if __name__ == '__main__':
-    company = Campany()
-    print(company.batch_run_detail())
+    project = Project()
+    project.concurrent_run(max_workers=2)
