@@ -1241,7 +1241,7 @@ class JZSC:
             province_, city_, county = province_and_city_and_county.split(self._SEP)
             if province_ == province and city_ == city:
                 ans.__setitem__(county, county_id)
-        return ans
+        return ans if ans else {f"{city}所有区": self._city_to_region_id.get(f'{province}{self._SEP}{city}')}
 
     def _get_qy_type_by_qualification_type(self, qualification_type: str) -> str:
         return self._qualification_to_type.get(qualification_type, self.ERROR_QY_TYPE)
@@ -1345,7 +1345,7 @@ class JZSC:
             tasks = list()
             for province, _ in self._province_to_region_id.items():
                 city_region_map = self._get_city_qy_regions_by_province(province)
-                for city, _ in city_region_map.items():
+                for city, city_region_id in city_region_map.items():
                     task = executor.submit(self.run, Params(province=province, city=city))
                     tasks.append(task)
                     task.add_done_callback(handle_exception)
@@ -1366,6 +1366,22 @@ class JZSC:
                 ans += self.count(file_or_dir)
             else:
                 ans += pd.read_excel(str(file_or_dir)).shape[0]
+        return ans
+
+    def find_empty_file(self) -> List[str]:
+        ans = list()
+        empty_file_size = 4765
+
+        def dfs(path: Path) -> None:
+            for file_or_dir in path.iterdir():
+                if file_or_dir.is_dir():
+                    dfs(file_or_dir)
+                    continue
+                size = len(file_or_dir.read_bytes())
+                if size == empty_file_size:
+                    ans.append(file_or_dir.name)
+
+        dfs(self._ROOT_PATH)
         return ans
 
 
@@ -1736,7 +1752,8 @@ class Person(JZSC):
         :param p:
         :return:
         """
-        df_company = pd.read_excel(self._JZ_QY_ROOT_PATH / p.province / ("%s.xlsx" % p.city), usecols='企业名称', dtype=str)
+        df_company = pd.read_excel(self._JZ_QY_ROOT_PATH / p.province / ("%s.xlsx" % p.city), usecols=['企业名称'],
+                                   dtype=str)
         companies = df_company['企业名称'].unique().tolist()
         df_results = pd.DataFrame()
         for company in companies:
@@ -1765,7 +1782,7 @@ class Person(JZSC):
         self._save(p, df_results=df_results)
         time_print("成功爬取“%s-%s”的人员数据" % (p.province, p.city))
 
-    def get_detail(self, ry_id: str) -> Dict[str, pd.DataFrame]:
+    def get_detail1(self, ry_id: str) -> Dict[str, pd.DataFrame]:
         headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
         cookies = {
             'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
@@ -1898,6 +1915,7 @@ class Person(JZSC):
 class Project(JZSC):
     """
     建设项目工具处理类
+    849668 / 2220960条
     """
 
     _project_type = {
@@ -2183,5 +2201,13 @@ class Project(JZSC):
 
 
 if __name__ == '__main__':
-    project = Project()
-    project.concurrent_run(max_workers=2)
+    # project = Project()
+    # print(project.count(project._ROOT_PATH))
+    # project.concurrent_run(max_workers=2)
+
+    person = Person()
+    person.concurrent_run()
+
+    # print(project.find_empty_file())
+    # project.run(Params(province='广东', city='东莞'))
+    # project.run(Params(province='广东', city='中山'))
