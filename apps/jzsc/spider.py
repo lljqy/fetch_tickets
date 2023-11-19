@@ -16,6 +16,7 @@ import pandas as pd
 from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
+from fake_useragent import UserAgent
 
 from utils.common import TIME_FORMAT, time_print
 
@@ -36,22 +37,7 @@ class JZSC:
     抽象基类
     """
     _base_url = "https://jzsc.mohurd.gov.cn"
-    _headers = {
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "zh-CN,zh;q=0.9",
-        "Connection": "keep-alive",
-        "Referer": urljoin(_base_url, "data/company?complexname="),
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/118.0.0.0 Safari/537.36",
-        "accessToken": "",
-        "sec-ch-ua": "\"Chromium\";v=\"118\", \"Google Chrome\";v=\"118\", \"Not=A?Brand\";v=\"99\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "timeout": "30000"
-    }
+    _page_size = 15
     _province_to_region_id = {'北京': '110000', '天津': '120000', '河北': '130000', '山西': '140000', '内蒙古': '150000',
                               '辽宁': '210000', '吉林': '220000', '黑龙江': '230000', '上海': '310000', '江苏': '320000',
                               '浙江': '330000', '安徽': '340000', '福建': '350000', '江西': '360000', '山东': '370000',
@@ -1174,6 +1160,36 @@ class JZSC:
         self._cookie = None
         # self._ips = ProxyHandler().get_latest_kdl_free_ips()
 
+    @property
+    def _headers(self) -> Dict[str, str]:
+        return {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Connection": "keep-alive",
+            "Referer": urljoin(self._base_url, "data/company?complexname="),
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent": UserAgent().chrome,
+            "accessToken": "",
+            "sec-ch-ua": "\"Chromium\";v=\"118\", \"Google Chrome\";v=\"118\", \"Not=A?Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "timeout": "30000"
+        }
+
+    @staticmethod
+    def decrypt(data: str, encoding: str = 'utf-8') -> Dict[str, Dict]:
+        iv = bytes("0123456789ABCDEF".encode(encoding))
+        keys = [bytes(key.encode(encoding)) for key in ("Dt8j9wGw%6HbxfFn", "jo8j9wGw%6HbxfFn")]
+        n = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
+        for key in keys:
+            try:
+                aes = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
+                return json.loads(Padding.unpad(aes.decrypt(binascii.a2b_base64(n)), AES.block_size).decode(encoding))
+            except (requests.exceptions.ConnectionError, Exception) as _:
+                continue
+
     def _get_selenium_config(self) -> webdriver.ChromeOptions:
         # 浏览器适配对象
         options = webdriver.ChromeOptions()
@@ -1190,18 +1206,6 @@ class JZSC:
         # 反爬虫特征处理
         options.add_argument('--disable-blink-features=AutomationControlled')
         return options
-
-    @staticmethod
-    def decrypt(data: str, encoding: str = 'utf-8') -> Dict[str, Dict]:
-        iv = bytes("0123456789ABCDEF".encode(encoding))
-        keys = [bytes(key.encode(encoding)) for key in ("Dt8j9wGw%6HbxfFn", "jo8j9wGw%6HbxfFn")]
-        n = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
-        for key in keys:
-            try:
-                aes = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
-                return json.loads(Padding.unpad(aes.decrypt(binascii.a2b_base64(n)), AES.block_size).decode(encoding))
-            except (requests.exceptions.ConnectionError, Exception) as _:
-                continue
 
     def _refresh_cookie(self, module: str, query_id: str) -> None:
         self._cookie = None
@@ -1466,9 +1470,9 @@ class Campany(JZSC):
             df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
             if p.qualification_type:
                 df_cur['QUALIFICATION_TYPE'] = p.qualification_type
-            if df_cur.empty:
-                break
             df_results = pd.concat([df_results, df_cur])
+            if df_cur.empty or df_cur.shape[0] < self._page_size:
+                break
             page += 1
         return df_results
 
@@ -1600,6 +1604,8 @@ class Campany(JZSC):
                     on,
                 )
                 df_cur_company = pd.concat([df_cur_company, df_cur_page_company])
+                if df_cur_company.shape[0] < self._page_size:
+                    break
             return df_cur_company
 
         headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
@@ -1615,7 +1621,11 @@ class Campany(JZSC):
     def run_detail(self, p: Params) -> None:
         """爬取详细信息"""
         file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
-        df_raw = pd.read_excel(file_path, dtype=str)
+        df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
+        if len(df_dict) > 1:
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
+            return
+        df_raw = list(df_dict.values())[0]
         try:
             detail_ids = df_raw[self.QY_ID].unique().tolist()
         except KeyError as _:
@@ -1640,6 +1650,9 @@ class Campany(JZSC):
 
     def run(self, p: Params) -> None:
         time_print("开始爬取“%s-%s”的企业数据" % (p.province, p.city))
+        if (self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)).exists():
+            time_print("已经爬取过“%s-%s”的企业数据" % (p.province, p.city))
+            return
         df_results = self._opt_crawl(p)
         df_results = self._clean(df_results=df_results)
         self._save(p, df_results=df_results)
@@ -1649,7 +1662,7 @@ class Campany(JZSC):
         params = {
             'complexname': social_credit_code_or_company,
             'pg': '0',
-            'pgsz': '15',
+            'pgsz': self._page_size,
             'total': '0',
         }
         while True:
@@ -1717,7 +1730,7 @@ class Person(JZSC):
         params = {
             'ry_qymc': company,
             'pg': '0',
-            'pgsz': '15',
+            'pgsz': self._page_size,
             'total': '0',
         }
         for _, ry_reg_type in self._person_type.items():
@@ -1732,7 +1745,7 @@ class Person(JZSC):
                     response = requests.get(self._table_url, headers=self._headers, params=params,
                                             proxies=self._proxies,
                                             verify=False)
-                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(100)]))
                     json_data = self.decrypt(response.text)
                 except (Exception, requests.exceptions.ConnectionError) as _:
                     # 此时爬虫被封需要等待一段时间继续爬
@@ -1740,9 +1753,9 @@ class Person(JZSC):
                     time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                     continue
                 df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
-                if df_cur.empty:
-                    break
                 df_results = pd.concat([df_results, df_cur])
+                if df_cur.empty or df_cur.shape[0] < self._page_size:
+                    break
                 page += 1
         return df_results
 
@@ -1782,7 +1795,7 @@ class Person(JZSC):
         self._save(p, df_results=df_results)
         time_print("成功爬取“%s-%s”的人员数据" % (p.province, p.city))
 
-    def get_detail1(self, ry_id: str) -> Dict[str, pd.DataFrame]:
+    def get_detail(self, ry_id: str) -> Dict[str, pd.DataFrame]:
         headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
         cookies = {
             'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
@@ -1856,7 +1869,11 @@ class Person(JZSC):
     def run_detail(self, p: Params) -> None:
         """爬取详细信息"""
         file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
-        df_raw = pd.read_excel(file_path, dtype=str)
+        df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
+        if len(df_dict) > 1:
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
+            return
+        df_raw = list(df_dict.values())[0]
         detail_ids = df_raw[self.QY_ID].unique().tolist()
         df_person, df_practice_registration, df_record = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
         for detail_id in detail_ids:
@@ -1883,7 +1900,7 @@ class Person(JZSC):
         params = {
             'complexname': person_name_or_id_card,
             'pg': '0',
-            'pgsz': '15',
+            'pgsz': self._page_size,
             'total': '0',
         }
         while True:
@@ -1956,9 +1973,9 @@ class Project(JZSC):
                 time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                 continue
             df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
-            if df_cur.empty:
-                break
             df_results = pd.concat([df_results, df_cur])
+            if df_cur.empty or df_cur.shape[0] < self._page_size:
+                break
             page += 1
         df_results['QY_REGION_NAME'] = region
         return df_results
@@ -1968,7 +1985,7 @@ class Project(JZSC):
             'projectType': '99',
             'projectRegionId': '140500',
             'pg': '0',
-            'pgsz': '15',
+            'pgsz': self._page_size,
             'total': '0',
         }
         df_results = pd.DataFrame()
@@ -2035,9 +2052,9 @@ class Project(JZSC):
                     time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
                     continue
                 df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
-                if df_cur.empty:
-                    break
                 df_result_ = pd.concat([df_result_, df_cur])
+                if df_cur.empty or df_cur.shape[0] < self._page_size:
+                    break
                 page += 1
             df_result_ = self._clean(df_result_)
             return df_result_
@@ -2073,7 +2090,7 @@ class Project(JZSC):
             params = {
                 'jsxmCode': pj_num,
                 'pg': '0',
-                'pgsz': '15',
+                'pgsz': self._page_size,
             }
             url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/tenderInfo")
             return _get_info(url, params)
@@ -2082,7 +2099,7 @@ class Project(JZSC):
             params = {
                 'jsxmCode': pj_num,
                 'pg': '0',
-                'pgsz': '15',
+                'pgsz': self._page_size,
             }
             url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/contractRecordManage")
             return _get_info(url, params)
@@ -2091,7 +2108,7 @@ class Project(JZSC):
             params = {
                 'jsxmCode': pj_num,
                 'pg': '0',
-                'pgsz': '15',
+                'pgsz': self._page_size,
             }
             url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/projectCensorInfo")
             return _get_info(url, params)
@@ -2100,7 +2117,7 @@ class Project(JZSC):
             params = {
                 'jsxmCode': pj_num,
                 'pg': '0',
-                'pgsz': '15',
+                'pgsz': self._page_size,
             }
             url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/builderLicenceManage")
             return _get_info(url, params)
@@ -2109,7 +2126,7 @@ class Project(JZSC):
             params = {
                 'jsxmCode': pj_num,
                 'pg': '0',
-                'pgsz': '15',
+                'pgsz': self._page_size,
             }
             url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/projectFinishManage")
             return _get_info(url, params)
@@ -2128,7 +2145,11 @@ class Project(JZSC):
     def run_detail(self, p: Params) -> None:
         """爬取详细信息"""
         file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
-        df_raw = pd.read_excel(file_path, dtype=str)
+        df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
+        if len(df_dict) > 1:
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
+            return
+        df_raw = list(df_dict.values())[0]
         detail_ids = df_raw[self.QY_ID].unique().tolist()
         df_project_base_info, df_tender_info, df_contract_record = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
         df_censor_info, df_builder_licence, df_project_finish_manage = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
@@ -2201,12 +2222,13 @@ class Project(JZSC):
 
 
 if __name__ == '__main__':
-    # project = Project()
+    project = Person()
+    project.concurrent_run(1)
     # print(project.count(project._ROOT_PATH))
     # project.concurrent_run(max_workers=2)
 
-    person = Person()
-    person.concurrent_run()
+    # person = Person()
+    # person.concurrent_run()
 
     # print(project.find_empty_file())
     # project.run(Params(province='广东', city='东莞'))
