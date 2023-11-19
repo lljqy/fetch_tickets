@@ -1245,7 +1245,7 @@ class JZSC:
             province_, city_, county = province_and_city_and_county.split(self._SEP)
             if province_ == province and city_ == city:
                 ans.__setitem__(county, county_id)
-        return ans if ans else {f"{city}所有区": self._city_to_region_id.get(f'{province}{self._SEP}{city}')}
+        return ans if ans else {f"%s所有区" % city: self._city_to_region_id.get(f'%s%s%s' % (province, self._SEP, city))}
 
     def _get_qy_type_by_qualification_type(self, qualification_type: str) -> str:
         return self._qualification_to_type.get(qualification_type, self.ERROR_QY_TYPE)
