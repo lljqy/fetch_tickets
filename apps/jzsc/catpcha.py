@@ -1,3 +1,5 @@
+import re
+import json
 from urllib.parse import urljoin
 from typing import Tuple, Dict, List
 
@@ -9,6 +11,7 @@ from apps.jzsc.spider import JZSC
 
 class Geetest:
     _ua = UserAgent()
+    _callback = "geetest_1700407154197"
 
     @property
     def _headers(self) -> Dict[str, str]:
@@ -38,7 +41,7 @@ class Geetest:
         #  2-1. 访问gettype.php接口
         params_2_1 = {
             'gt': gt,
-            'callback': 'geetest_1700407154197',
+            'callback': self._callback,
         }
         requests.get('https://api.geetest.com/gettype.php', params=params_2_1, headers=self._headers)
         #  2-2. 访问get.php接口
@@ -49,7 +52,7 @@ class Geetest:
             "pt": "0",
             "client_type": "web",
             "w": "",
-            "callback": "geetest_1700407152911"
+            "callback": self._callback
         }
         requests.get("https://api.geetest.com/get.php", params=params_2_2, headers=self._headers)
         #  2-3. 访问ajax.php接口
@@ -59,7 +62,7 @@ class Geetest:
             "lang": "zh-cn",
             "pt": "0",
             "client_type": "web",
-            "callback": "geetest_1700408433327",
+            "callback": self._callback,
             "w": "",
         }
         requests.get("https://api.geevisit.com/ajax.php", params=params_2_3, headers=self._headers)
@@ -79,10 +82,10 @@ class Geetest:
             "isPC": "true",
             "autoReset": "true",
             "width": "100%",
-            "callback": "geetest_1700408437019"
+            "callback": self._callback
         }
         response = requests.get("https://api.geevisit.com/get.php", params=params, headers=self._headers)
-        data = response.json()
+        data = json.loads(re.search(r"geetest_\d+\((.*?)\)", response.text).groups()[0]).get('data', dict())
         return data.get('pic'), data.get('c'), data.get('s')
 
     def _generate_positions(self, pic: str) -> str:
@@ -104,7 +107,7 @@ class Geetest:
             "pt": "0",
             "client_type": "web",
             "w": w,
-            "callback": "geetest_1700408433327"
+            "callback": self._callback
         }
         response = requests.get("https://api.geevisit.com/ajax.php", headers=self._headers, params=params)
         return response.json().get('validate')
@@ -112,7 +115,7 @@ class Geetest:
     def _get_access_token(self, challenge: str, validate_code: str, random_id: str) -> str:
         # 1. 访问/geetest/verifyLoginCode
         params = {'geetest_challenge': challenge, 'geetest_validate': validate_code,
-                  'geetest_seccode': "%s|jordan" % validate_code, 'randomId': random_id}
+                  'geetest_seccode': "%s|jordan" % validate_code, 'randomId': random_id, 'session_key': None}
         response = requests.get(
             'https://jzsc.mohurd.gov.cn/APi/webApi/geetest/verifyLoginCode',
             params=params,
@@ -136,4 +139,4 @@ class Geetest:
 
 if __name__ == '__main__':
     geetest = Geetest()
-    print(geetest._get_gt_and_challenge())
+    print(geetest.process())
