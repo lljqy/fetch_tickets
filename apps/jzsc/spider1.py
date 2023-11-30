@@ -18,12 +18,9 @@ from selenium import webdriver
 from Crypto.Util import Padding
 from fake_useragent import UserAgent
 
+from utils.common import TIME_FORMAT, time_print
+
 warnings.filterwarnings('ignore')
-TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-
-def time_print(msg: str) -> None:
-    print(f"[%s] %s" % (datetime.now().strftime(TIME_FORMAT), msg))
 
 
 @dataclass
@@ -1392,6 +1389,313 @@ class JZSC:
         return ans
 
 
+class Campany(JZSC):
+    """
+      建筑建设工程企业处理类
+    """
+
+    _table_url = urljoin(JZSC._base_url, "APi/webApi/dataservice/query/comp/list")
+    QY_ID = "RY_ID"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._apt_code_map = self._get_apt_codes_map()
+        with open(self._ROOT_PATH.parent / 'token.txt') as f:
+            self._access_token = f.readline().strip()
+        self._ROOT_PATH = self._ROOT_PATH / '建设工程企业'
+        self._ROOT_PATH.mkdir(exist_ok=True)
+        self._municipality = ("北京", "天津", "上海", "重庆")
+
+    def _clean(self, df_results: pd.DataFrame) -> pd.DataFrame:
+        keys = ['RN', 'QY_ID', 'QY_ORG_CODE', 'QY_NAME', 'QY_FR_NAME', 'QY_REGION', 'QY_REGION_NAME', 'OLD_CODE',
+                'COLLECT_TIME', 'QY_SRC_TYPE', 'QUALIFICATION_TYPE']
+        values = ['序号', self.QY_ID, '统一社会信用代码', '企业名称', '企业法定代表人', '区域代码', '企业注册属地', '原始代码',
+                  '注册时间', '数据类型', '资质类别']
+        if df_results.empty:
+            df_results = pd.DataFrame(columns=keys)
+        df_results['COLLECT_TIME'] = df_results['COLLECT_TIME'].apply(
+            lambda x: datetime.fromtimestamp(x / 1000).strftime(TIME_FORMAT))
+        columns_map = dict(zip(keys, values))
+        df_results.drop(columns=['RN'], inplace=True)
+        df_results.rename(columns=columns_map, inplace=True)
+        df_results.drop_duplicates(inplace=True)
+        return df_results[values[1:]]
+
+    def _parse_params(self, p: Params) -> Dict[str, str]:
+        params = {"pg": "0", "pgsz": "15", "total": "0"}
+        if not p.province and p.city:
+            raise ValueError("必须输入province参数后再输入city参数")
+        if p.province in self._municipality:
+            params.__setitem__("qy_region", self._province_to_region_id.get(p.province))
+        elif p.city:
+            params.__setitem__("qy_region",
+                               self._get_city_qy_regions_by_province(p.province).get(p.city, self.ERROR_REGION_ID))
+        if p.qualification_type:
+            params.__setitem__("qy_type", self._get_qy_type_by_qualification_type(p.qualification_type))
+        if p.qualification_name:
+            params.__setitem__(
+                "apt_code", self._apt_code_map.get(p.qualification_name, self.ERROR_APT_CODE).split(self._SEP)[0])
+        return params
+
+    def _get_total(self, p: Params) -> int:
+        params = self._parse_params(p)
+        while True:
+            try:
+                response = requests.get(self._table_url, headers=self._headers, params=params, proxies=self._proxies,
+                                        verify=False)
+                json_data = self.decrypt(response.text)
+                return int(json_data.get('data', dict()).get('total', '0'))
+            except (Exception, requests.exceptions.ConnectionError) as _:
+                time_print("爬虫被封, 请稍等...")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+        return 0
+
+    def _crawl_single(self, p: Params) -> pd.DataFrame:
+        params = self._parse_params(p)
+        if p.province in self._municipality:
+            params.__setitem__("qy_region", self._province_to_region_id.get(p.province))
+        page = 0
+        df_results = pd.DataFrame()
+        while True:
+            if page > self._DATA_LIMIT // int(params.get('pgsz')):
+                time_print("%s条件下的总数超过了%s条" % (p, self._DATA_LIMIT))
+                break
+            params.__setitem__('pg', str(page))
+            try:
+                response = requests.get(self._table_url, headers=self._headers, params=params, proxies=self._proxies,
+                                        verify=False)
+                time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                json_data = self.decrypt(response.text)
+            except (Exception, requests.exceptions.ConnectionError) as _:
+                # 此时爬虫被封需要等待一段时间继续爬
+                time_print("爬虫被封，休息片刻...")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+            df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+            if p.qualification_type:
+                df_cur['QUALIFICATION_TYPE'] = p.qualification_type
+            df_results = pd.concat([df_results, df_cur])
+            if df_cur.empty or df_cur.shape[0] < self._page_size:
+                break
+            page += 1
+        return df_results
+
+    def _opt_crawl(self, p: Params) -> pd.DataFrame:
+        qualification_types = ("勘察企业", "设计企业", "建筑业企业", "监理企业")
+        df_results = pd.DataFrame()
+        for qualification_type in qualification_types:
+            p.qualification_type = qualification_type
+            total = self._get_total(p)
+            if total <= self._DATA_LIMIT:
+                time_print("无须爬取资质名称：开始爬取%s-%s-%s的数据" % (p.province, p.city, p.qualification_type))
+                df_cur = self._crawl_single(p)
+                time_print("无须爬取资质名称：成功爬取%s-%s-%s的数据" % (p.province, p.city, p.qualification_type))
+            else:
+                df_cur = pd.DataFrame()
+                apt_names = self._get_apt_names(p)
+                for apt_name in apt_names:
+                    time_print("开始爬取%s-%s-%s-%s的数据" % (p.province, p.city, p.qualification_type, apt_name))
+                    p.__setattr__("qualification_name", apt_name)
+                    df_cur = pd.concat([df_cur, self._crawl_single(p)])
+                    p.__setattr__("qualification_name", None)
+                    time_print("成功爬取%s-%s-%s-%s的数据" % (p.province, p.city, p.qualification_type, apt_name))
+            df_results = pd.concat([df_results, df_cur])
+        return df_results
+
+    def _crawl(self, p: Params):
+        df_results = self._opt_crawl(p)
+        self._df_results = df_results
+
+    def get_detail(self, qy_id: str) -> Dict[str, pd.DataFrame]:
+        def refresh_headers(query_id: str) -> None:
+            self._refresh_cookie('company', query_id)
+            headers.__setitem__('accessToken', self._access_token)
+
+        def _crawl_company_detail(query_id: str) -> pd.DataFrame:
+            com_detail_url = urljoin(self._base_url, "APi/webApi/dataservice/query/comp/compDetail")
+            while True:
+                try:
+                    response = requests.get(
+                        com_detail_url,
+                        headers=headers,
+                        params={'compId': query_id},
+                        proxies=self._proxies,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                    if json_data.get('code') == requests.codes.request_timeout and json_data.get(
+                            'message') == 'token失效':
+                        refresh_headers(query_id)
+                        continue
+                    df_cur_company = pd.DataFrame([json_data.get('data', dict()).get('compMap')])
+                    df_cur_company['QY_ID'] = query_id
+                    return df_cur_company
+                except (requests.exceptions.ConnectionError, Exception) as _:
+                    time_print("爬虫被封，请稍等...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                    continue
+
+        def _crawl_cert_detail(query_id: str, apt_cert_nos: List[str]) -> pd.DataFrame:
+            cert_url = urljoin(self._base_url, "APi/webApi/dataservice/query/comp/caCertDetail")
+            params = {'qyId': query_id}
+            df_cert_nos = pd.DataFrame()
+            for cert_no in apt_cert_nos:
+                params.__setitem__('certno', cert_no)
+                while True:
+                    try:
+                        response = requests.get(
+                            cert_url,
+                            headers=headers,
+                            params=params,
+                            proxies=self._proxies,
+                            cookies=getattr(self, 'cookies', cookies))
+                        time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                        json_data = self.decrypt(response.text)
+                    except (requests.exceptions.ConnectionError, Exception) as _:
+                        time_print("爬虫被封，请稍等...")
+                        time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                        continue
+                    if json_data.get('code') == requests.codes.request_timeout and json_data.get(
+                            'message') == 'token失效':
+                        refresh_headers(query_id)
+                        continue
+                    df_single_cert_no = pd.DataFrame([json_data.get('data', dict()).get('rawCaDetail', dict())])
+                    df_cert_nos = pd.concat([df_cert_nos, df_single_cert_no])
+                    break
+            return df_cert_nos
+
+        def _crawl_qualification(query_id: str) -> pd.DataFrame:
+            page = 0
+            params = {'qyId': query_id, "pg": str(page), "pgsz": "15"}
+            qualification_list_url = urljoin(self._base_url, "APi/webApi/dataservice/query/comp/caDetailList")
+            df_cur_company = pd.DataFrame()
+            while True:
+                if page > self._DATA_LIMIT // int(params.get('pgsz')):
+                    time_print("%s条件下资质的总数超过了%s条" % (query_id, self._DATA_LIMIT))
+                    break
+                params.__setitem__('pg', str(page))
+                try:
+                    # 查询证书列表
+                    response = requests.get(
+                        qualification_list_url,
+                        headers=headers,
+                        params=params,
+                        proxies=self._proxies,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                except (requests.exceptions.ConnectionError, Exception) as _:
+                    time_print("爬虫被封，请稍等...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                    continue
+                if json_data.get('code') == requests.codes.request_timeout and json_data.get('message') == 'token失效':
+                    refresh_headers(query_id)
+                    continue
+                page += 1
+                df_cur_page_company = pd.DataFrame(json_data.get('data', dict()).get('pageList').get('list'))
+                if df_cur_page_company.empty:
+                    break
+                # 查询证书详情
+                apt_cert_nos = df_cur_page_company['APT_CERTNO'].unique().tolist()
+                df_cert_nos = _crawl_cert_detail(query_id, apt_cert_nos)
+                df_cur_page_company['QY_ID'] = query_id
+                common_columns = set(df_cur_page_company.columns).intersection(df_cert_nos.columns)
+                on = 'APT_CERTNO'
+                df_cur_page_company = pd.merge(
+                    df_cur_page_company,
+                    df_cert_nos.drop(columns=common_columns.difference([on])),
+                    'left',
+                    on,
+                )
+                df_cur_company = pd.concat([df_cur_company, df_cur_page_company])
+                if df_cur_company.shape[0] < self._page_size:
+                    break
+            return df_cur_company
+
+        headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
+        cookies = {
+            'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
+            'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
+        }
+        return {
+            'company_detail': _crawl_company_detail(qy_id),
+            'qualification': _crawl_qualification(qy_id)
+        }
+
+    def run_detail(self, p: Params) -> None:
+        """爬取详细信息"""
+        file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
+        df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
+        if len(df_dict) > 1:
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
+            return
+        df_raw = list(df_dict.values())[0]
+        try:
+            detail_ids = df_raw[self.QY_ID].unique().tolist()
+        except KeyError as _:
+            detail_ids = df_raw['查询ID'].unique().tolist()
+        df_company = pd.DataFrame()
+        df_qualification = pd.DataFrame()
+        for detail_id in detail_ids:
+            time_print("开始爬%s-%s-%s数据" % (p.province, p.city, detail_id))
+            detail_result = self.get_detail(qy_id=detail_id)
+            # 企业详情
+            df_cur_company = detail_result.get('company_detail')
+            df_company = pd.concat([df_cur_company, df_company])
+            # 企业资质和证书详情
+            df_cur_qualification = detail_result.get('qualification')
+            df_qualification = pd.concat([df_cur_qualification, df_qualification])
+            time_print("成功爬%s-%s-%s数据" % (p.province, p.city, detail_id))
+        # 持久化到磁盘
+        with pd.ExcelWriter(file_path) as writer:
+            df_raw.to_excel(writer, sheet_name="企业数据", index=False)
+            df_company.to_excel(writer, sheet_name='公司详情', index=False)
+            df_qualification.to_excel(writer, sheet_name='企业资质资格', index=False)
+
+    def run(self, p: Params) -> None:
+        time_print("开始爬取“%s-%s”的企业数据" % (p.province, p.city))
+        if (self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)).exists():
+            time_print("已经爬取过“%s-%s”的企业数据" % (p.province, p.city))
+            return
+        df_results = self._opt_crawl(p)
+        df_results = self._clean(df_results=df_results)
+        self._save(p, df_results=df_results)
+        time_print("成功爬取“%s-%s”的企业数据" % (p.province, p.city))
+
+    def search(self, social_credit_code_or_company: str) -> Dict[str, pd.DataFrame]:
+        params = {
+            'complexname': social_credit_code_or_company,
+            'pg': '0',
+            'pgsz': self._page_size,
+            'total': '0',
+        }
+        while True:
+            try:
+                response = requests.get(
+                    urljoin(self._base_url, "APi/webApi/dataservice/query/comp/list"),
+                    params=params,
+                    headers=self._headers,
+                )
+                json_data = self.decrypt(response.text)
+                df_enterprise_data = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+                if df_enterprise_data.empty:
+                    return {
+                        "enterprise": df_enterprise_data,
+                        "company_detail": pd.DataFrame(),
+                        "qualification": pd.DataFrame()
+                    }
+                query_id = df_enterprise_data['QY_ID'].astype(str).unique().tolist()[0]
+                df_enterprise_data['QUALIFICATION_TYPE'] = ''
+                df_enterprise_data = self._clean(df_enterprise_data)
+                detail = self.get_detail(query_id)
+                return {"enterprise": df_enterprise_data, **detail}
+            except (requests.exceptions.ConnectionError, Exception) as _:
+                time_print("爬虫被封, 请稍等")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+
+
 class Person(JZSC):
     """
     从业人员工具处理类
@@ -1572,7 +1876,7 @@ class Person(JZSC):
         file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
         df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
         if len(df_dict) > 1:
-            time_print(f"已经爬过%s-%s详细数据啦.xlsx" % (p.province, p.city))
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
             return
         df_raw = list(df_dict.values())[0]
         detail_ids = df_raw[self.QY_ID].unique().tolist()
@@ -1630,7 +1934,311 @@ class Person(JZSC):
                 continue
 
 
+class Project(JZSC):
+    """
+    建设项目工具处理类
+    849668 / 2220960条
+    """
+
+    _project_type = {
+        "房屋建筑工程": "01",
+        "市政工程": "02",
+        "其他": "99",
+    }
+    QY_ID = 'ID'
+
+    def __init__(self) -> None:
+        super().__init__()
+        with open(self._ROOT_PATH.parent / 'token.txt') as f:
+            self._access_token = f.readline().strip()
+        self._ROOT_PATH = self._ROOT_PATH / '建设项目'
+        self._ROOT_PATH.mkdir(exist_ok=True)
+
+    def _single_crawl(self, params: Dict[str, str], region: str) -> pd.DataFrame:
+        page = 0
+        df_results = pd.DataFrame()
+        while True:
+            if page > self._DATA_LIMIT // int(params.get('pgsz')):
+                time_print("%s的项目总数超过了%s条" % (region, self._DATA_LIMIT))
+                break
+            params.__setitem__('pg', str(page))
+            try:
+                response = requests.get(
+                    urljoin(self._base_url, "APi/webApi/dataservice/query/project/list"),
+                    params=params,
+                    headers=self._headers,
+                    proxies=self._proxies,
+                    verify=False
+                )
+                time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                json_data = self.decrypt(response.text)
+            except (Exception, requests.exceptions.ConnectionError) as _:
+                # 此时爬虫被封需要等待一段时间继续爬
+                time_print("爬虫被封，休息片刻...")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+            df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+            df_results = pd.concat([df_results, df_cur])
+            if df_cur.empty or df_cur.shape[0] < self._page_size:
+                break
+            page += 1
+        df_results['QY_REGION_NAME'] = region
+        return df_results
+
+    def _crawl(self, p: Params, *args, **kwargs) -> pd.DataFrame:
+        params = {
+            'projectType': '99',
+            'projectRegionId': '140500',
+            'pg': '0',
+            'pgsz': self._page_size,
+            'total': '0',
+        }
+        df_results = pd.DataFrame()
+        county_id_map = self._get_county_qy_regions_by_city(province=p.province, city=p.city)
+        for county, county_id in county_id_map.items():
+            params.__setitem__('projectRegionId', county_id)
+            region = "%s-%s-%s" % (p.province, p.city, county)
+            for _, project_type_id in self._project_type.items():
+                params.__setitem__('projectType', project_type_id)
+                df_results = pd.concat([df_results, self._single_crawl(params, region)])
+        return df_results
+
+    def _clean(self, df_results: pd.DataFrame) -> pd.DataFrame:
+        if 'RN' in df_results.columns:
+            df_results.drop(columns=['RN'], inplace=True)
+        return df_results.drop_duplicates()
+
+    def run(self, p: Params) -> None:
+        """
+        根据省份和城市批量爬取人员信息
+        :param p:
+        :return:
+        """
+        time_print("开始爬取“%s-%s”的项目数据" % (p.province, p.city))
+        if (self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)).exists():
+            time_print("已经爬取过“%s-%s”的项目数据" % (p.province, p.city))
+            return
+        df_results = self._crawl(p)
+        df_results = self._clean(df_results)
+        self._save(p, df_results=df_results)
+        time_print("成功爬取“%s-%s”的项目数据" % (p.province, p.city))
+
+    def get_detail(self, qy_id: str) -> Dict[str, pd.DataFrame]:
+        headers = {**self._headers, 'accessToken': self._access_token, 'v': '231012'}
+        cookies = {
+            'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
+            'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
+        }
+
+        def refresh_headers(id_: str) -> None:
+            self._refresh_cookie('project', id_)
+            headers.__setitem__('accessToken', self._access_token)
+
+        def _get_info(url: str, params: Dict[str, str]) -> pd.DataFrame:
+            page = 0
+            df_result_ = pd.DataFrame()
+            while True:
+                if page > self._DATA_LIMIT // int(params.get('pgsz')):
+                    time_print("%s的总数超过了%s条" % (params, self._DATA_LIMIT))
+                    break
+                params.__setitem__('pg', str(page))
+                try:
+                    response = requests.get(
+                        url,
+                        params=params,
+                        cookies=cookies,
+                        headers=headers,
+                    )
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                except (Exception, requests.exceptions.ConnectionError) as _:
+                    # 此时爬虫被封需要等待一段时间继续爬
+                    time_print("爬虫被封，休息片刻...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                    continue
+                df_cur = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+                df_result_ = pd.concat([df_result_, df_cur])
+                if df_cur.empty or df_cur.shape[0] < self._page_size:
+                    break
+                page += 1
+            df_result_ = self._clean(df_result_)
+            return df_result_
+
+        def get_project_base_info() -> pd.DataFrame:
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/projectDetail")
+            while True:
+                try:
+                    response = requests.get(
+                        url,
+                        headers=headers,
+                        params={'id': qy_id},
+                        proxies=self._proxies,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([interval // 100 for interval in range(10)]))
+                    json_data = self.decrypt(response.text)
+                    if json_data.get('code') == requests.codes.request_timeout and json_data.get(
+                            'message') == 'token失效':
+                        refresh_headers(qy_id)
+                        continue
+                    result = json_data.get('data', dict())
+                    if not result:
+                        break
+                    df_project_base_info_ = pd.DataFrame([result])
+                    df_project_base_info_[self.QY_ID] = qy_id
+                    return df_project_base_info_
+                except (requests.exceptions.ConnectionError, Exception) as _:
+                    time_print("爬虫被封，请稍等...")
+                    time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                    continue
+
+        def get_tender_info(pj_num: str) -> pd.DataFrame:
+            params = {
+                'jsxmCode': pj_num,
+                'pg': '0',
+                'pgsz': self._page_size,
+            }
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/tenderInfo")
+            return _get_info(url, params)
+
+        def get_contract_record(pj_num: str) -> pd.DataFrame:
+            params = {
+                'jsxmCode': pj_num,
+                'pg': '0',
+                'pgsz': self._page_size,
+            }
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/contractRecordManage")
+            return _get_info(url, params)
+
+        def get_censor_info(pj_num: str) -> pd.DataFrame:
+            params = {
+                'jsxmCode': pj_num,
+                'pg': '0',
+                'pgsz': self._page_size,
+            }
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/projectCensorInfo")
+            return _get_info(url, params)
+
+        def get_builder_licence(pj_num: str) -> pd.DataFrame:
+            params = {
+                'jsxmCode': pj_num,
+                'pg': '0',
+                'pgsz': self._page_size,
+            }
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/builderLicenceManage")
+            return _get_info(url, params)
+
+        def get_project_finish_manage(pj_num: str) -> pd.DataFrame:
+            params = {
+                'jsxmCode': pj_num,
+                'pg': '0',
+                'pgsz': self._page_size,
+            }
+            url = urljoin(self._base_url, "APi/webApi/dataservice/query/project/projectFinishManage")
+            return _get_info(url, params)
+
+        df_project_base_info = get_project_base_info()
+        project_num = df_project_base_info['PRJNUM'].astype(str).unique().tolist()[0]
+        return {
+            'project_base_info': df_project_base_info,
+            'tender_info': get_tender_info(project_num),
+            'contract_record': get_contract_record(project_num),
+            'censor_info': get_censor_info(project_num),
+            'builder_licence': get_builder_licence(project_num),
+            'project_finish_manage': get_project_finish_manage(project_num),
+        }
+
+    def run_detail(self, p: Params) -> None:
+        """爬取详细信息"""
+        file_path = self._ROOT_PATH / p.province / ("%s.xlsx" % p.city)
+        df_dict = pd.read_excel(file_path, dtype=str, sheet_name=None)
+        if len(df_dict) > 1:
+            time_print(f"已经爬过{p.province}-{p.city}详细数据啦.xlsx")
+            return
+        df_raw = list(df_dict.values())[0]
+        detail_ids = df_raw[self.QY_ID].unique().tolist()
+        df_project_base_info, df_tender_info, df_contract_record = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        df_censor_info, df_builder_licence, df_project_finish_manage = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        for detail_id in detail_ids:
+            time_print("开始爬取%s-%s-%s数据" % (p.province, p.city, detail_id))
+            detail_result = self.get_detail(qy_id=detail_id)
+            # 工程基本信息
+            df_cur_project_base_info = detail_result.get('project_base_info')
+            df_project_base_info = pd.concat([df_cur_project_base_info, df_project_base_info])
+            # 招投标信息
+            df_cur_tender_info = detail_result.get('tender_info')
+            df_tender_info = pd.concat([df_cur_tender_info, df_tender_info])
+            # 合同登记信息
+            df_cur_contract_record = detail_result.get('contract_record')
+            df_contract_record = pd.concat([df_cur_contract_record, df_contract_record])
+            # 施工图审查
+            df_cur_censor_info = detail_result.get('censor_info')
+            df_censor_info = pd.concat([df_cur_censor_info, df_censor_info])
+            # 施工许可
+            df_cur_builder_licence = detail_result.get('builder_licence')
+            df_builder_licence = pd.concat([df_cur_builder_licence, df_builder_licence])
+            # 竣工验收
+            df_cur_project_finish_manage = detail_result.get('project_finish_manage')
+            df_project_finish_manage = pd.concat([df_cur_project_finish_manage, df_project_finish_manage])
+            time_print("成功爬取%s-%s-%s数据" % (p.province, p.city, detail_id))
+        # 持久化到磁盘
+        with pd.ExcelWriter(file_path) as writer:
+            df_raw.to_excel(writer, sheet_name="项目数据", index=False)
+            df_project_base_info.to_excel(writer, sheet_name='项目详情-工程基本信息', index=False)
+            df_tender_info.to_excel(writer, sheet_name='项目详情-招投标信息', index=False)
+            df_contract_record.to_excel(writer, sheet_name="项目详情-合同登记信息", index=False)
+            df_censor_info.to_excel(writer, sheet_name="项目详情-施工图审查", index=False)
+            df_builder_licence.to_excel(writer, sheet_name="项目详情-施工许可", index=False)
+            df_project_finish_manage.to_excel(writer, sheet_name="项目详情-竣工验收", index=False)
+
+    def search(self, project_name_or_project_code: str) -> Dict[str, pd.DataFrame]:
+        params = {
+            'complexname': project_name_or_project_code,
+            'pg': '0',
+            'pgsz': '15',
+            'total': '450',
+        }
+        while True:
+            try:
+                response = requests.get(
+                    urljoin(self._base_url, "APi/webApi/dataservice/query/project/list"),
+                    params=params,
+                    headers=self._headers,
+                )
+                json_data = self.decrypt(response.text)
+                df_project_data = pd.DataFrame(json_data.get('data', dict()).get('list', list()))
+                if df_project_data.empty:
+                    return {
+                        "project": df_project_data,
+                        'project_base_info': pd.DataFrame(),
+                        'tender_info': pd.DataFrame(),
+                        'contract_record': pd.DataFrame(),
+                        'censor_info': pd.DataFrame(),
+                        'builder_licence': pd.DataFrame(),
+                        'project_finish_manage': pd.DataFrame(),
+                    }
+                qy_id = df_project_data[self.QY_ID].astype(str).unique().tolist()[0]
+                df_project_data = self._clean(df_project_data)
+                detail = self.get_detail(qy_id)
+                return {"project": df_project_data, **detail}
+            except (requests.exceptions.ConnectionError, Exception) as _:
+                time_print("爬虫被封, 请稍等")
+                time.sleep(self.WAIT_TIME_WHEN_BE_BLOCKED)
+                continue
+
+
 if __name__ == '__main__':
-    project = Person()
-    project.concurrent_run(1)
-    from python_obfuscator import obfuscator
+    company = Campany()
+    company.concurrent_run(2)
+
+    # print(company.decrypt("5588a9e126c91a28cc2f6813e3793369cab248e1aa728c4584bb5b9b14eae57e7c7033c04f9ef77b550f53033750519209328b4cb6c500c6cecc5a7195b06017680875f890a05320e4c9c36d9300ce2ebf666c21c697af298e635eddbcfd173d9959cd5f29d8a71ca332e8888754d9ed81b839c8c2e5e44a7f6fa8eae8b8b4d4d27ccfc1637637fc96fa9277574c7055884def2653ea2896925052318ceb035b95923c0c2a8fcac3822157f8b6f03aa3dd98d4bbcd1578257aea1da917ac557b3e7f500aa04a9b9838c9dda156309ab958d991fb96165eb04ebfe9f5ef7dcf37731cd7380b4963103b40bedbde9b5a1921477b5605d0774be82d6f19fd78ad522037faaad7a031630ac40538e4e3849390ea2b03eb99d2c1671e24fd36d07b5fba459fcc16b14209c39eb60252e6b525c02dcd721293e7989bc61e2ec2caa88ea3788da4887e15b8a365c953a6b9a5dc16b35238c4f783a202f9351342186c42d15462e0d8b81ca6f3a148c62443c2bbaed1b67d2ac16b96d73701ea8da48f13024d4cb0313451292ee23696bb698a2347a65288dcf5247211f8d2eff17d8cc91e77a74fe633cc97f03e0891ab9f1354cfc210ffc0e140641ce6e31892f61810ef5ae7067411debc6300c58ad9dc255cf173dc163748e0b96bc4d4ba518c71f0ba3df445b35645a93d3530660abc86bf24e6526cfe767f0f0fa2c0790c8589e4de944bb5ef1538c18bd9a38d5146d8bf96ef919cb39ddde1af82dbbb62455dab86bf8d19c6ed2a0b7c12e864fb3529ba9be1699a20f215919beb08140fb93d478c01abd777066ab6a112383ddfca379025f496cda0ffae52d9a802c136d1a47b8da56322a6fd30d45422faa5f569b8b5402ce01b797678c232ecefb7076bb1dac86d1c16322388bc4d7e2461637ad0d9f2ee5b524faf0def00f5ad4bfa622aebffe216316756921d5a3fdece171160e9404c6dfca40ec6b3b5d77932bec3b85ca16f1795e81074a5d2fbb4bcc674b256bc395e5687c43f611ab3ad5ce07966a5a3557e526d4af244928f974b9883a5c73f355f34228878e4b78fbcd4b0f13ae23ba541edaf42728ce2dd0930b2e53783f1355a1b118d716fbcf477ba9637b2f72c289b96992de9440c39e9348c1503bb582dae19816b1c5ec2d866970d12bcc2fd22a2edf253657a87de38991c8a4e4a9a9807a2354de2f4e832fc847aaa3fce5b13caf75984d43b6d38b60e8e86ef04be9b3fd072f38a33725c24dc18e41fae3b11067d3317f132d9571f8b75a575926fbb308df11e6aa25c33b007aa967d8a4061a877d0d9e380fc628c9035c1f641e942485844ac2581ed0f63a36289564da2437736c7151586865645ba9bf36ce6c899bc9b609903853951c7b6bc00fdeb91b4c369158c4c0e27f54938828a3f996d8e784c5196ea0adf058c59ad5c65bee40692e265b70673b0a00b7a0acbaac7f3c9ca17e4ec59ba64d5f5c78a09851b80eaa480043c3d3e90fae5696031c95870edace8f4e68fff7a74b968bca9e957a3d62f9d1b6353f8b6ed2bd0fc88905a740e259e7e2185acf4373c446baeb2c250728dc95f898f79552342747542e0cd93acbd2d9ae8a68b6f0616c1b3e5f585ec40c497600cfd10551522b390573edecf7ab2b3ee15652f79bc9f30d37f4851bb87c0d2ffe8fdee0f7bdd4cbad81e45dce17a092347dfc3a691b79122517a6596c479a28006a0a32c134ac56dff696bb534c67b61c4d019906978b6d0aae878e5807fb34ccb99d40d5810d1069e697c4552c1612a1db4f33e47a635732d33fcec8fc2be2a7d3297a7a69e0cc309bea63b9a8d4f6a2b4420f8a0f612c92329a19351bc4e5ecef470484de163ff9b0318ac85d820791fd638bb3920258b70e9a70252f3581172ce8ab475c5ed7333537dba4831e85905a7debf704c48409df82ba5076f3cc44be1cb2e501a46b30aa1b913d2282c35eb975ee660bd6c78cb56fceb50c09bb75beb1ae571519420f5b04be712705506cd1887486b8463cae65cb9d4026868701d45bd5eb9fe2849299329f6344b2b744ee1047374832a8d323270568a823bc898cce85c05b57c0c2aca8f81852ed57043f29e69d38aaef27f6ddda006d86704ee751e0110b548ce5bec1a915ecce01024843a76f9cc908a32745a1a2733fc5334325cf053a07532903a197b089b7cca48c8ff68e99e76d0d251536008e5560306c0b453e06d3b20a81591c1f5d71bbf4c5cfd3e433387be64a6be735631e2a890c4cccb43674f301e8127b46cb8d19ed778346f029acb2b8072509a9fc18bdaaea2bc1ddd3f18d3cc376ae91ffc1c2f805324505a9a2ba42fd74dbfaca0808487ea79c815cf47d75ab3103cd886c2a04c0280df068968b4eaf2d4534dadac40a604b765cd914f06ddc56b4a175cb32f06cf976f5a18d2ad591543103d56d63b65f351fe6f92dd797f42e5a8cef7077bc16e454fcb415a126088194e57b4a03d00781b22dfe66eef88b4050a036631c20f670ab7df54ee5976a67fde2e72949ee42230c6dda2b3de2fb0678c0cff56b70ef94c5ae77d277841d541c60f1dbe3dcdeb85379772bb7713ea4d11745f6f80ed2df34508e39e0e03eb1c1a43a7e02e1e0a98cb53b4c3f1d972288a166c15fd2dd23ffb3975b90e67c5f57fcd22e3c1fc05d8a0488faddaf54457bfdaa2cb5320eaa915a64e049185e97c0e5e47e677cba7ee8f6d7fa621fca4c3bc6fb1bdc6b7ca82716a2c04b046018cb1037366e42c7230d18704f4887c6f04586397d99990b09900255c77303a61c2cfccb0420c49addd97118b38494c8508af931c52457c1d84162c4fc4e8aa1e5c41d30765a65e92f3f9bbae0bb7636c7539610fbcde2f20fa639ad9cddfc9fb1002a4abf971fbda449276bbd780559852751dbfe19595305f75abd0c53543b481bbf92f6205d51a7eb46dfb1ab2d45c16606e6e320d29ca76ad3de344f53ac3c6b73c2eff7b0ad1a5166265f458752edbf51cbea7c6012ca19b7ace0fb4d8178a2a175ec1e5a33aafde89e665db4fbdd064bf9eaa5c53c26aac7c323d0198f9c61d2e9dcea04ad89ac89b192dd6cacd31835996ba57f836314b15c2feaf3fa1640fbfd9cb7b007c512e0c677deaba963742cf420c9f6b4957421258c002accd197e090e8bdcd39c1799da42bbf49e309135b07968143dfb1c95ea9c967609dc6e532fce127668ed09247c61ac48bd5fa7954308fd4af849317ede0d9d1bfe7f5c048cb0f41ca39c775dc188ae6078d4d8a60a439d9adff00844600a74fd83d6d543b9def59aef1680d02afe53e5c5b3555e0cfbc8d450003ed1c760c1931bad7caa46ef58ee6b010ce58ba9865ee66545a739c69b47723abe02e8e7edc8e2e874fa2bc1b57c2db5ef918eca8461e447b3aaf8345e06631112dfd28a641a38293f2bb595360b4d30c8abd3e3770ca7d373ce1653ca80214b85fd9da982a1a756e17ff6125495f7c2cb9370b260b2fb58e200afff5c7574e0b0cad6088a1c282e5a89dbed38556ad3376ff2f38b263881b9baaaf35fd2c3eef5321cc56ef5310a7e468eac6215fcd0d0a5e523c316b3fcb0676e9a21777c3a07ce743bc0341323f6f685694f0d95d4846219d4ad08b250d9f534837c5d11c26091d87b1d6aaa442335c808501cccc3a18977cee63746c36d05517c39dfa55d20b59888760863951f94e921636f6fcaed834e5415219a6b517baa3251472804e78402030c36c83f34f8e79a1538f7926bf08fc06b72d3250630bf1a6c40b6e897903a8bcf49e46a6bb80ccf435ab5d8eef4fcef2c004c29318265c1e48728c1596d44f686f6337c4523587b10a9285a47171089056ea7cd9bfd15b3e07b720e567126b10b4f3eda12635b73927f42e6670ae8605adfb6f3ea1e7da3f92f7b33d0706f51470419e64375f4ae0957c7c179f460d94bb6ac82e11fa0a6705182349aa7071e848b44425e1585c66638271d9f4d044baf4d94821928818deab5350bccc4bfd778a16aa9992bc92eba8dce8a942fd7ca0f8e9bc40063c35c6da6a48c3e68c8827b58fe3c48cf262bb95071105830344b8d5aafdeee28e8e6fc295dd64ddfdfc12a239488221fd75f37f53151fd126d37cebab10892901a7eb352b751efec213fd6af9349b88c59a2288d7c58295554b7932ca355e518e30d9f1d08157b7fd4e45c61ad1f55a565201a87b5744a228dfadbc145f55346e3eb342bd62434bf61ae476591abedad6c5b06760cf16dde6da597f2dbda5bf9b3981eb12cb00ac09e44422b194bf2551151082ed5b637e0cc1d13cc345eeac60db03be6a97fbf3943b7ba745c2457ff3d939dde624e1a13048518953b909c0ed1d73ae5142e05b3af410b7da4c347f28d5d17035e9a3e57b9b5dce791fbad580f846bbdadeff166c6f8715ffe37de3ae1a6483a05c1ddf77b156a0c0d8d7b2cd791c8647cd805b4bbda33acd9187f1840f3bfbf445f71052f41fe3639df62f7282dcddcfec3d532a076b18a4c99295fc1551fab62aec1e730d9d91e798c613f7be62d680884e51b981c617b89dd263e844c735a5f38cf729b4a32964c32c85a6d2dea97d617fcac5e01999e85940c3bd7edf83dc3ee2a49216d7e92bf9b7f36a8e7e0e6c888d0a8e9629e6a457dea5fd205f293b450bdf29857d49e04156763ca55d680362e0a448d7cec3a5d951028395a2c6bf490a23b9f027cdf3cea5d57435ad14d3d60214aca17d45577e343aa6d3a7d1926a1c75ed5826b4b20fff45b5660fdc98b6042b6e0d860ac60d8096dc1bce47750fdd047b2cf0da458b68be0bab9d2d0ce9396037dd332bed1dfcec0041865ff29d2e44023a1e91d5e918f6fd186a8f018873b2d5395e8aa3d2edbcf4561dba671231a9b8634c1cee8dc82dbe93f7d64f9ad0af455ca6a41c76a0c6945177352692d38d83f5b954e84b7765f11e0d7ab303f3f4f7e66f590fabc832ebdcf66f7d438d031202f95d1b34a4451429f5c0b5f4775895e9b0e1315d93d5c197bfaa3ac9b30f139cba7fe70333e921a8b96eb3be52a6291d4cab1eb0d8f3b8f3e20d55aab5ac1b90892b1ac2120973cd5053c96df09adabdb0e2a9d63fdccbc5007759de54c9de579e4c040378e0692f6a2ef6cc970f90b800938f420c47de1405934991a252bad53e2963f62640b98e8fea57d53031843a9dadc463830f9be03fe71d7dde178d106a75a973054f7723b581ddb5c729d187bbea9a961cc17e034e17d4fc9db3441887bb6590bd7972ee219a007a177c9c5411e059e207f973ef6c946ddc31376f9178639e09137d2621065d78bbe812b452fca150082ca2947ca886916f93eddf7b315575d803ba4e3dcaa72b788667bfbcf014050faaa648bbc48ad68ea9b1728550b41e0a6c4d678b297e798f7c60f5b19cc4aad07b4fd1b5d1f1719dd44d9c7cf33ede8af4860f4a3279a04962387d64b589bfb4ecbf4fa84b7dd035773ca6d2a5a7d4f9c65bae7ed0626b0f5e779d79ad459bd15360d97f84e93b4732ecee7a9ce3c83a609569309e466890d6e70f0bb5583747a40e139f09e54f101a7f4c2791387ccf1eff6993bd90a3992ecca633666c1afb8f18d4f952516229998184a03867eaae863a54bdd3cd5811dbacfc959039149045860e0fa7ef4069e024382d2fd12b3102477959dd8116d7f7fcb5e451fd0980265b2795c09d00d18d8c2caa774a3a548030bd97d19290a16c66316fd92760d121d4408c6d9ca0c31a0a97443119a28416a5c4d2d51dba2c3ff0bedd005e736f9b11074a440238beae1df30e64aa83bab3db0ded230f38e859daf8f4938c05bdfbd14e791499965d57ada01c1dc913f4ab06402b42eaaa7e5b7dfd00358636b0fa85d0a9aaf73d297a1d55e55d9f55a52e1183f9a4852f82a47746825c1ac99e8ec28f9221a862a68b1dc6d54a8d11acbd60c5f8926e5984cc49a9a18a9bad863d269b485eb796aa96d304b99bc921585c33303cfcb66bb3f35074729ddf69093b6181e639cce3677ee49f07f7f26c513b6f82dd9aa1c99d11f90b18c3731c074eb20d0b9080d6e813fe755638429b4d63e19a30474d98f13070253a547b6637b094fde9f2406d6594d757dc24952a42adf81779b881fb5c90974dfebc31104ae60ca621cc8b6702f55c63577485a9c15397d528f8f6837cb703353b4d9b2118569e7dd626dc089170054261d580ab48af66fba4cb50e85111458eb97aac9226d8c96fe764a44c4b820caa3d4fe028ce145df4ad61225f70c555855aec2206ed49a7e307403ca0f06c908eba782f7aabc06964ac50d169c9576faca1c08279f76e9935be8b9c1b61089e7b3ed328bfd40c4d6431e88a78582a1212188d188107b78434fce24e5a21de160268ca8654ae4f9760c892674b828584edf9af76274d51f7ee3cdb765f405b8f5fc67814c1fb0905c0c0af10d991ce8a3531c0785da19a434a335a40a094a93fdd4fc77e3c622e7b8a57403d3d1ab68787cc664ca0a23a0cbeda41fe01dfadafda4c723afde9ec5"))
+
+    # print(project.count(project._ROOT_PATH))
+
+    # project.concurrent_run(max_workers=2)
+
+    # person = Person()
+    # person.concurrent_run()
+
+    # print(project.find_empty_file())
+    # project.run(Params(province='广东', city='东莞'))
+    # project.run(Params(province='广东', city='中山'))

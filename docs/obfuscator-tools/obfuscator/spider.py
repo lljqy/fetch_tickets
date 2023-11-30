@@ -15,43 +15,29 @@ import pandas as pd
 from Crypto.Cipher import AES
 from selenium import webdriver
 from Crypto.Util import Padding
+from fake_useragent import UserAgent
 warnings.filterwarnings('ignore')
-PyRKeolnbWAvwgdWyTnAKAvREzqaxKNK = "%Y-%m-%d %H:%M:%S"
-def GvMobTWcuvVsCZUTqbliBJmuGLHmACKj(msg: str) -> None:
-    print(f"[%s] %s" % (datetime.now().strftime(PyRKeolnbWAvwgdWyTnAKAvREzqaxKNK), msg))
+DuXbKxbIRAlpDKsklxtxBslJsNCYqKIO = "%Y-%m-%d %H:%M:%S"
+def FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ(msg: str) -> None:
+    print(f"[%s] %s" % (datetime.now().strftime(DuXbKxbIRAlpDKsklxtxBslJsNCYqKIO), msg))
 @dataclass
-class KClJvPLkdQaQWqLluAxEhkQEndovMFbn:
-    QempkUGcRCgSlFjyOjyYGdhmMytWBYFu: str = None
-    rukuqEMFToMvhUwmntcwMUFiMwmddtis: str = None
-    DHTiCjimararxDmrOIPeYznEJsDLwuCn: str = None
-    QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO: str = None
+class hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ:
+    ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf: str = None
+    wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs: str = None
+    GjXRvJfztWUCMvnCCrMAqwERBzNZZavV: str = None
+    qualification_type: str = None
     qualification_name: str = None
-class nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs:
-    HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY = "https://jzsc.mohurd.gov.cn"
-    adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH = {
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "zh-CN,zh;q=0.9",
-        "Connection": "keep-alive",
-        "Referer": urljoin(HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "data/company?complexname="),
-        "Sec-Fetch-Dest": "empty",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/118.0.0.0 Safari/537.36",
-        "accessToken": "",
-        "sec-ch-ua": "\"Chromium\";v=\"118\", \"Google Chrome\";v=\"118\", \"Not=A?Brand\";v=\"99\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "timeout": "30000"
-    }
-    eYlERBGKUxDqGJUzdUJKihqGvuVGJmjQ = {'北京': '110000', '天津': '120000', '河北': '130000', '山西': '140000', '内蒙古': '150000',
+class CfkTymDEiTkwBOfnkJWcnzktlsYJwHRl:
+    JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN = "https://jzsc.mohurd.gov.cn"
+    urBpYPqNTvANudGGFigvVVOoQvZzlpxu = 15
+    ntxazkcNjRLACPooXFBWhkDFtzLuSRuS = {'北京': '110000', '天津': '120000', '河北': '130000', '山西': '140000', '内蒙古': '150000',
                               '辽宁': '210000', '吉林': '220000', '黑龙江': '230000', '上海': '310000', '江苏': '320000',
                               '浙江': '330000', '安徽': '340000', '福建': '350000', '江西': '360000', '山东': '370000',
                               '河南': '410000', '湖北': '420000', '湖南': '430000', '广东': '440000', '广西': '450000',
                               '海南': '460000', '重庆': '500000', '四川': '510000', '贵州': '520000', '云南': '530000',
                               '西藏': '540000', '陕西': '610000', '甘肃': '620000', '青海': '630000', '宁夏': '640000',
                               '新疆': '650000', '新疆生产建设兵团': '660000'}
-    XiGWmmgGIsDTFsVWkGhlTCKzFiDRjhBK = {'北京@@市辖区': '110100', '天津@@市辖区': '120100', '天津@@县': '120200', '河北@@石家庄': '130100',
+    PcApnSqlFFYegVHTrxUagiCTwNzMtThz = {'北京@@市辖区': '110100', '天津@@市辖区': '120100', '天津@@县': '120200', '河北@@石家庄': '130100',
                           '河北@@唐山': '130200', '河北@@秦皇岛': '130300', '河北@@邯郸': '130400', '河北@@邢台': '130500',
                           '河北@@保定': '130600', '河北@@张家口': '130700', '河北@@承德': '130800', '河北@@沧州': '130900',
                           '河北@@廊坊': '131000', '河北@@衡水': '131100', '山西@@太原': '140100', '山西@@大同': '140200',
@@ -144,7 +130,7 @@ class nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs:
                           '新疆生产建设兵团@@第八师': '660800', '新疆生产建设兵团@@第九师': '660900', '新疆生产建设兵团@@第十师': '661000',
                           '新疆生产建设兵团@@第十一师': '661100', '新疆生产建设兵团@@第十二师': '661200', '新疆生产建设兵团@@第十三师': '661300',
                           '新疆生产建设兵团@@第十四师': '661400'}
-    ZMCcBObmngxdzCxrVdoSekPPEBQsFgOq = {'北京@@市辖区@@东城区': '110101', '北京@@市辖区@@西城区': '110102', '北京@@市辖区@@朝阳区': '110105',
+    KlIsJLOmweDhjdJYfhEUuzjcykzVBGQH = {'北京@@市辖区@@东城区': '110101', '北京@@市辖区@@西城区': '110102', '北京@@市辖区@@朝阳区': '110105',
                             '北京@@市辖区@@丰台区': '110106', '北京@@市辖区@@石景山区': '110107', '北京@@市辖区@@海淀区': '110108',
                             '北京@@市辖区@@门头沟区': '110109', '北京@@市辖区@@房山区': '110111', '北京@@市辖区@@通州区': '110112',
                             '北京@@市辖区@@顺义区': '110113', '北京@@市辖区@@昌平区': '110114', '北京@@市辖区@@大兴区': '110115',
@@ -1122,7 +1108,7 @@ class nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs:
                             '新疆@@自治区直辖县级行政区划@@图木舒克': '659003', '新疆@@自治区直辖县级行政区划@@五家渠': '659004',
                             '新疆@@自治区直辖县级行政区划@@北屯': '659005', '新疆@@自治区直辖县级行政区划@@铁门关': '659006',
                             '新疆@@自治区直辖县级行政区划@@双河': '659007', '新疆@@自治区直辖县级行政区划@@可克达拉': '659008'}
-    WRRpuoRFdMuVOIdYNtlzSkldlcYxcrUY = {
+    hLIdNDGzoJfJgiDwiRuZFPnurHOSbabs = {
         "勘察企业": "QY_ZZ_ZZZD_003",
         "设计企业": "QY_ZZ_ZZZD_004",
         "建筑业企业": "QY_ZZ_ZZZD_001",
@@ -1130,7 +1116,7 @@ class nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs:
         "设计与施工一体化企业": "QY_ZZ_ZZZD_005",
         "造价咨询企业": "QY_ZZ_ZZZD_007",
     }
-    NmnKEdenVVPfukUgOqKlCBDmxPErHbuB = {
+    YxcnTWcwUrnyfbxdQEAmRCBPXiPNnXuN = {
         "工程勘察": "B",
         "工程设计": "A",
         "建筑业企业资质": "D",
@@ -1139,439 +1125,410 @@ class nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs:
         "设计与施工一体化": "C",
         "工程招架咨询": "I",
     }
-    AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF = 20
-    JncPSEQThTeKCVnLeoXhsqHLPxgmqJdr = "-100"
-    WcBRBEQVoKEwuvhidRsawdDjxeJLrrdX = "-101"
-    FjVcnsErJpDpYvFSnTXILrewRsouZgUp = "XXX"
-    XGdILeHGYWIvQvmnMWglFTSlmumBLIfc = 450
-    gCVQTnKPldvAbKDdGxFhiKmTvnLxriws = Path(sys.argv[0]).parent / 'data'
-    gCVQTnKPldvAbKDdGxFhiKmTvnLxriws.mkdir(exist_ok=True)
-    almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV = "@@"
-    MrlFVKXPrPiWcDUoQkcvzperZfQKjvFN = urljoin(HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/asite/region/index")
-    jXDAUQKNYwAiaxhGSqpzNkDahQcdUOqR = urljoin(HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/asite/qualapt/aptData")
-    SiKWcUtkiJNaQfetEuFXMpGOBMEpczSa = '127.0.0.1'
-    mwbydvlPhtMALRhpEHJwXjwEyWpwpMbI = 33210
-    dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO = {
-        "http": "http://%s:%s" % (SiKWcUtkiJNaQfetEuFXMpGOBMEpczSa, mwbydvlPhtMALRhpEHJwXjwEyWpwpMbI),
-        "https": "http://%s:%s" % (SiKWcUtkiJNaQfetEuFXMpGOBMEpczSa, mwbydvlPhtMALRhpEHJwXjwEyWpwpMbI),
+    lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB = 20
+    QKjBjTnSPzHTTNVhUFJMFtmlJMIwVdGd = "-100"
+    FJTToISawsUdrTvtZrqkPTHFlPOcQyUR = "-101"
+    XINQWPUwUklgxklOeGtpBwZOmSQMnKnq = "XXX"
+    OcDsKjwkVHIjXkdGXnsxvGzJqgmnBUqo = 450
+    sfEUtMczDPtchbmRROpLBejsPiLqyPFF = Path(sys.argv[0]).parent / 'data'
+    sfEUtMczDPtchbmRROpLBejsPiLqyPFF.mkdir(exist_ok=True)
+    CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr = "@@"
+    wyTFEPKvaRfvXhptXrOQlEnPugYyXrKq = urljoin(JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/asite/region/index")
+    rTTUVHXPurZRvXVzjeFjfYOuYnDtdGID = urljoin(JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/asite/qualapt/aptData")
+    WyXxMdnrEeOyJiOvLvZXNgUUIaGVJXXd = '127.0.0.1'
+    cYJyBTXmWGSayhUtbMORlrRuKWEBswjf = 33210
+    VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng = {
+        "http": "http://%s:%s" % (WyXxMdnrEeOyJiOvLvZXNgUUIaGVJXXd, cYJyBTXmWGSayhUtbMORlrRuKWEBswjf),
+        "https": "http://%s:%s" % (WyXxMdnrEeOyJiOvLvZXNgUUIaGVJXXd, cYJyBTXmWGSayhUtbMORlrRuKWEBswjf),
     }
     def __init__(self) -> None:
         self._df_results = pd.DataFrame()
         self._df_detail_results = pd.DataFrame()
         self._cookie = None
-        self._apt_code_map = self.WfqArdTBuJYAiGdLptAMzYmqSvGdIelV()
-    def kWEtHbBQjBLBTDmYLbwJhOAvzBHuOdrE(self) -> webdriver.ChromeOptions:
-        uvvrnFlrqepMCrgyELrVYzArahUyOqoO = webdriver.ChromeOptions()
-        if self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO:
-            uvvrnFlrqepMCrgyELrVYzArahUyOqoO.add_argument('--proxy-server={}:{}'.format(self.SiKWcUtkiJNaQfetEuFXMpGOBMEpczSa, self.mwbydvlPhtMALRhpEHJwXjwEyWpwpMbI))
-        uvvrnFlrqepMCrgyELrVYzArahUyOqoO.add_experimental_option('excludeSwitches', ['enable-automation'])
-        hgKVeMBPYAGUJskghSnuOuXWayJfDnSP = {'credentials_enable_service': False, 'profile.password_manager_enable': False}
-        uvvrnFlrqepMCrgyELrVYzArahUyOqoO.add_experimental_option('prefs', hgKVeMBPYAGUJskghSnuOuXWayJfDnSP)
-        uvvrnFlrqepMCrgyELrVYzArahUyOqoO.add_argument('--disable-blink-features=AutomationControlled')
-        return uvvrnFlrqepMCrgyELrVYzArahUyOqoO
+    @property
+    def pIlKZSYcGGlrTljsZmKqNLkyPAsZrlYa(self) -> Dict[str, str]:
+        return {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Connection": "keep-alive",
+            "Referer": urljoin(self.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "data/company?complexname="),
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "User-Agent": UserAgent().chrome,
+            "accessToken": "",
+            "sec-ch-ua": "\"Chromium\";v=\"118\", \"Google Chrome\";v=\"118\", \"Not=A?Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "timeout": "30000"
+        }
     @staticmethod
     def decrypt(data: str, encoding: str = 'utf-8') -> Dict[str, Dict]:
         iv = bytes("0123456789ABCDEF".encode(encoding))
         keys = [bytes(key.encode(encoding)) for key in ("Dt8j9wGw%6HbxfFn", "jo8j9wGw%6HbxfFn")]
-        eQAPVdXHVpLhyxRjJCBomjarrpUokyBX = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
+        VVJDnAJDKhzLGdguXUegARcbTHiLYluW = binascii.b2a_base64(binascii.unhexlify(data)).decode(encoding)
         for key in keys:
             try:
-                QdvNzuQRxZfQcdfSLUcHEnAIEQEOnpQI = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
-                return json.loads(Padding.unpad(QdvNzuQRxZfQcdfSLUcHEnAIEQEOnpQI.decrypt(binascii.a2b_base64(eQAPVdXHVpLhyxRjJCBomjarrpUokyBX)), AES.block_size).decode(encoding))
+                QVquYwrUYdnPrWRHonROKQPsLgRQxrWv = AES.new(key=key, mode=AES.MODE_CBC, iv=iv)
+                return json.loads(Padding.unpad(QVquYwrUYdnPrWRHonROKQPsLgRQxrWv.decrypt(binascii.a2b_base64(VVJDnAJDKhzLGdguXUegARcbTHiLYluW)), AES.block_size).decode(encoding))
             except (requests.exceptions.ConnectionError, Exception) as _:
                 continue
-    def BWVliroSBpjSGzGzTibljXnbWHKRwFfC(self, module: str, OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR: str) -> None:
+    def BrhrqkjiWtCkucZBZImekKJlWcQMIlkk(self) -> webdriver.ChromeOptions:
+        CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS = webdriver.ChromeOptions()
+        if self.VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng:
+            CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS.add_argument('--proxy-server={}:{}'.format(self.WyXxMdnrEeOyJiOvLvZXNgUUIaGVJXXd, self.cYJyBTXmWGSayhUtbMORlrRuKWEBswjf))
+        CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS.add_experimental_option('excludeSwitches', ['enable-automation'])
+        EDyOGgWxdHQtsueMwLGYoxyJQtCDzMVv = {'credentials_enable_service': False, 'profile.password_manager_enable': False}
+        CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS.add_experimental_option('prefs', EDyOGgWxdHQtsueMwLGYoxyJQtCDzMVv)
+        CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS.add_argument('--disable-blink-features=AutomationControlled')
+        return CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS
+    def loWvxTrhNleTPGoQcYKAUYXVLmCIydVu(self, module: str, query_id: str) -> None:
         self._cookie = None
-        uvvrnFlrqepMCrgyELrVYzArahUyOqoO = self.kWEtHbBQjBLBTDmYLbwJhOAvzBHuOdrE()
-        iiGEEFUHWHZslTGSBLbFLjFgyYyrRfUp = webdriver.Chrome(uvvrnFlrqepMCrgyELrVYzArahUyOqoO)
+        CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS = self.BrhrqkjiWtCkucZBZImekKJlWcQMIlkk()
+        FDksyoErtzfDBPIdyMIFNaDtBTNHROmt = webdriver.Chrome(CCxbsEeIWDNeUGyHIRLyNTIrRLVvvwRS)
         while True:
             try:
-                iiGEEFUHWHZslTGSBLbFLjFgyYyrRfUp.get(urljoin(self.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "data/%s/detail?id=%s" % (module, OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)))
+                FDksyoErtzfDBPIdyMIFNaDtBTNHROmt.get(urljoin(self.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "data/%s/detail?id=%s" % (module, query_id)))
                 break
             except (requests.exceptions.ConnectionError, Exception) as _:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封，请稍等...")
-                time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
+                FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("爬虫被封，请稍等...")
+                time.sleep(self.lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB)
                 continue
-        while not iiGEEFUHWHZslTGSBLbFLjFgyYyrRfUp.execute_script("return window.localStorage.getItem(arguments[0]);", "accessToken"):
+        while not FDksyoErtzfDBPIdyMIFNaDtBTNHROmt.execute_script("return window.localStorage.getItem(arguments[0]);", "accessToken"):
             continue
-        self._cookie = iiGEEFUHWHZslTGSBLbFLjFgyYyrRfUp.get_cookies()
-        self._access_token = iiGEEFUHWHZslTGSBLbFLjFgyYyrRfUp.execute_script(
+        self._cookie = FDksyoErtzfDBPIdyMIFNaDtBTNHROmt.get_cookies()
+        self._access_token = FDksyoErtzfDBPIdyMIFNaDtBTNHROmt.execute_script(
             "return window.localStorage.getItem(arguments[0]);", "accessToken")
-        with open(self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws.parent.parent / 'token.txt', 'w') as f:
+        with open(self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF.parent.parent / 'token.txt', 'w') as f:
             f.write(self._access_token)
-    def PPPhbqNXmuycOtjNndYpUcQrKiVMZKsI(self, QempkUGcRCgSlFjyOjyYGdhmMytWBYFu: str) -> str:
-        return self.eYlERBGKUxDqGJUzdUJKihqGvuVGJmjQ.get(QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, self.JncPSEQThTeKCVnLeoXhsqHLPxgmqJdr)
-    def dvULbSVcOqepeEaLWCpNTXIqerNVoHXz(self, QempkUGcRCgSlFjyOjyYGdhmMytWBYFu: str) -> Dict[str, str]:
-        tTzyYjnkDcdnuZTsSKZALomxDZkehgnr = dict()
-        for emmPVcxlHKVaeKStOSrchBAIisAokKhK, zOozfRSmCifKXvvAnBdpSOobjrwOxotC in self.XiGWmmgGIsDTFsVWkGhlTCKzFiDRjhBK.items():
-            QGCVhsLLTpaisKxKGGssrTXhWjFeRRdY, rukuqEMFToMvhUwmntcwMUFiMwmddtis = emmPVcxlHKVaeKStOSrchBAIisAokKhK.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)
-            if QGCVhsLLTpaisKxKGGssrTXhWjFeRRdY == QempkUGcRCgSlFjyOjyYGdhmMytWBYFu:
-                tTzyYjnkDcdnuZTsSKZALomxDZkehgnr.__setitem__(rukuqEMFToMvhUwmntcwMUFiMwmddtis, zOozfRSmCifKXvvAnBdpSOobjrwOxotC)
-        return tTzyYjnkDcdnuZTsSKZALomxDZkehgnr
-    def MEOPDKTmPhXhZWrogeLcnnPLZsjEvgWC(self, QempkUGcRCgSlFjyOjyYGdhmMytWBYFu: str, rukuqEMFToMvhUwmntcwMUFiMwmddtis: str) -> Dict[str, str]:
-        tTzyYjnkDcdnuZTsSKZALomxDZkehgnr = dict()
-        for hWLgjybZJuYuMUzWgQFIRyuyAOBMiLQf, yXxALNLvuntBYYHPWLbhxCgJPdDaDNOX in self.ZMCcBObmngxdzCxrVdoSekPPEBQsFgOq.items():
-            QGCVhsLLTpaisKxKGGssrTXhWjFeRRdY, CAufmVcSZqFyUXDdsDzTGhOPpHSEhVkM, DHTiCjimararxDmrOIPeYznEJsDLwuCn = hWLgjybZJuYuMUzWgQFIRyuyAOBMiLQf.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)
-            if QGCVhsLLTpaisKxKGGssrTXhWjFeRRdY == QempkUGcRCgSlFjyOjyYGdhmMytWBYFu and CAufmVcSZqFyUXDdsDzTGhOPpHSEhVkM == rukuqEMFToMvhUwmntcwMUFiMwmddtis:
-                tTzyYjnkDcdnuZTsSKZALomxDZkehgnr.__setitem__(DHTiCjimararxDmrOIPeYznEJsDLwuCn, yXxALNLvuntBYYHPWLbhxCgJPdDaDNOX)
-        return tTzyYjnkDcdnuZTsSKZALomxDZkehgnr
-    def mcHGlOoLmvdqHxkJjaKKBUuRHGHRCzIG(self, QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO: str) -> str:
-        return self.WRRpuoRFdMuVOIdYNtlzSkldlcYxcrUY.get(QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO, self.WcBRBEQVoKEwuvhidRsawdDjxeJLrrdX)
-    def WfqArdTBuJYAiGdLptAMzYmqSvGdIelV(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn = None) -> Dict[str, str]:
+    def nMoTFVIkZEXvnxHgAzzTiOjwCjMWJzaE(self, ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf: str) -> str:
+        return self.ntxazkcNjRLACPooXFBWhkDFtzLuSRuS.get(ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, self.QKjBjTnSPzHTTNVhUFJMFtmlJMIwVdGd)
+    def GPOblrjSHxEOiaJtwlDpailJSWHMeVhB(self, ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf: str) -> Dict[str, str]:
+        pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM = dict()
+        for mgTgrRPithwrjGXKLFgbkLJctcjLccop, pkYNvgfoFivkPKzzhJpijEHSbwHjXNQo in self.PcApnSqlFFYegVHTrxUagiCTwNzMtThz.items():
+            gMIoknXXsXuRSrChpVNKYGWtODZOTXjK, wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs = mgTgrRPithwrjGXKLFgbkLJctcjLccop.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)
+            if gMIoknXXsXuRSrChpVNKYGWtODZOTXjK == ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf:
+                pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM.__setitem__(wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs, pkYNvgfoFivkPKzzhJpijEHSbwHjXNQo)
+        return pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM
+    def mzwaoaSoMcsjkGbTiUTfRLCFIOSuTDRH(self, ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf: str, wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs: str) -> Dict[str, str]:
+        pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM = dict()
+        for PokuXOBhVlEmcBFMWVhIkHKYKyZiWXQU, xzYSsSvRhWiLIbXEvMxmcjkgxolCmcUF in self.KlIsJLOmweDhjdJYfhEUuzjcykzVBGQH.items():
+            gMIoknXXsXuRSrChpVNKYGWtODZOTXjK, wpRwWypiEWbOaWvRiBMMTModBPjGgUjN, GjXRvJfztWUCMvnCCrMAqwERBzNZZavV = PokuXOBhVlEmcBFMWVhIkHKYKyZiWXQU.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)
+            if gMIoknXXsXuRSrChpVNKYGWtODZOTXjK == ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf and wpRwWypiEWbOaWvRiBMMTModBPjGgUjN == wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs:
+                pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM.__setitem__(GjXRvJfztWUCMvnCCrMAqwERBzNZZavV, xzYSsSvRhWiLIbXEvMxmcjkgxolCmcUF)
+        return pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM if pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM else {f"%s所有区" % wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs: self.PcApnSqlFFYegVHTrxUagiCTwNzMtThz.get(f'%s%s%s' % (ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr, wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))}
+    def DfnHzsrNxgixcDQUYoajmfdXmXpHraUl(self, qualification_type: str) -> str:
+        return self.hLIdNDGzoJfJgiDwiRuZFPnurHOSbabs.get(qualification_type, self.FJTToISawsUdrTvtZrqkPTHFlPOcQyUR)
+    def eMQAlInBgiEXiKQrEDIQFfzyAOuPfcQU(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ = None) -> Dict[str, str]:
         params = dict()
         if p and p.qualification_name:
-            params.__setitem__("apt_root", self.NmnKEdenVVPfukUgOqKlCBDmxPErHbuB.get(p.qualification_name, self.FjVcnsErJpDpYvFSnTXILrewRsouZgUp))
+            params.__setitem__("apt_root", self.YxcnTWcwUrnyfbxdQEAmRCBPXiPNnXuN.get(p.qualification_name, self.XINQWPUwUklgxklOeGtpBwZOmSQMnKnq))
         while True:
             try:
-                MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(self.jXDAUQKNYwAiaxhGSqpzNkDahQcdUOqR, headers=self.adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH, params=params, proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
+                LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh = requests.get(self.rTTUVHXPurZRvXVzjeFjfYOuYnDtdGID, headers=self.pIlKZSYcGGlrTljsZmKqNLkyPAsZrlYa, params=params, proxies=self.VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng,
                                         verify=False)
-                FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                return {item['APT_CASENAME'].strip(): item['APT_CODE'].strip() + self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV + item['APT_TYPE'] for item
+                DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr = self.decrypt(LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh.text)
+                return {item['APT_CASENAME'].strip(): item['APT_CODE'].strip() + self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr + item['APT_TYPE'] for item
                         in
-                        FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ['data']['pageList']}
+                        DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr['data']['pageList']}
             except (Exception, requests.exceptions.ConnectionError) as _:
                 continue
-    def hNnIDoqlJUeFFURRPysYgJERUeXEfdCv(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> List[str]:
-        dowEGgJzJHSHMArxadqAkQrxjSQItPMU = self.mcHGlOoLmvdqHxkJjaKKBUuRHGHRCzIG(p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO)
+    def xsVlBoxgijJeiYmjerVGzyGYRdodydjA(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> List[str]:
+        UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp = self.DfnHzsrNxgixcDQUYoajmfdXmXpHraUl(p.qualification_type)
         if not self._apt_code_map:
-            self._apt_code_map = self.WfqArdTBuJYAiGdLptAMzYmqSvGdIelV(p)
-        if dowEGgJzJHSHMArxadqAkQrxjSQItPMU == self.WcBRBEQVoKEwuvhidRsawdDjxeJLrrdX:
+            self._apt_code_map = self.eMQAlInBgiEXiKQrEDIQFfzyAOuPfcQU(p)
+        if UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp == self.FJTToISawsUdrTvtZrqkPTHFlPOcQyUR:
             return sorted(self._apt_code_map.keys())
         return sorted(
-            set([UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk for UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk, JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf in self._apt_code_map.items() if
-                 JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)[1] == dowEGgJzJHSHMArxadqAkQrxjSQItPMU]))
-    def qVlKnbVXsQGNLDmBceGPhaVYPsvpqQbE(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> List[str]:
-        dowEGgJzJHSHMArxadqAkQrxjSQItPMU = self.mcHGlOoLmvdqHxkJjaKKBUuRHGHRCzIG(p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO)
+            set([ETuzXIpXFUIQCBnNFZeRiLyDxuBUCGYw for ETuzXIpXFUIQCBnNFZeRiLyDxuBUCGYw, dXVftAEDifcRaNMwNcjVtTFeqAaXslWO in self._apt_code_map.items() if
+                 dXVftAEDifcRaNMwNcjVtTFeqAaXslWO.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)[1] == UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp]))
+    def mCXvHvAfDuaoUnjBBgBBwBxwjUeDCNxE(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> List[str]:
+        UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp = self.DfnHzsrNxgixcDQUYoajmfdXmXpHraUl(p.qualification_type)
         if not self._apt_code_map:
-            self._apt_code_map = self.WfqArdTBuJYAiGdLptAMzYmqSvGdIelV(p)
-        if dowEGgJzJHSHMArxadqAkQrxjSQItPMU == self.WcBRBEQVoKEwuvhidRsawdDjxeJLrrdX:
+            self._apt_code_map = self.eMQAlInBgiEXiKQrEDIQFfzyAOuPfcQU(p)
+        if UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp == self.FJTToISawsUdrTvtZrqkPTHFlPOcQyUR:
             return sorted(set(
-                JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)[1]
-                for UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk, JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf in self._apt_code_map.items()))
+                dXVftAEDifcRaNMwNcjVtTFeqAaXslWO.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)[1]
+                for ETuzXIpXFUIQCBnNFZeRiLyDxuBUCGYw, dXVftAEDifcRaNMwNcjVtTFeqAaXslWO in self._apt_code_map.items()))
         return sorted(
-            set([JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)[1]
-                 for UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk, JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf in self._apt_code_map.items()
-                 if JiSTOaXrEdAJtxPPluzfhaBNnOEaIGzf.split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)[1] == dowEGgJzJHSHMArxadqAkQrxjSQItPMU]))
-    def hlaRPOWdnflFlkaprCeezGZdSWMQpiJM(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> pd.DataFrame:
+            set([dXVftAEDifcRaNMwNcjVtTFeqAaXslWO.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)[1]
+                 for ETuzXIpXFUIQCBnNFZeRiLyDxuBUCGYw, dXVftAEDifcRaNMwNcjVtTFeqAaXslWO in self._apt_code_map.items()
+                 if dXVftAEDifcRaNMwNcjVtTFeqAaXslWO.split(self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr)[1] == UqPWQaafXCEiKkmYdWAmVaWoTgcLALvp]))
+    def uZmkFoadZltUMFQFwWMJnwVxVNwqXsof(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> pd.DataFrame:
         raise NotImplementedError("必须实现_crawl方法")
-    def yqewJIGtVlYasCUOnLCKcEYalrubKcZm(self, *args, **kwargs) -> pd.DataFrame:
+    def GrPvbJtykEpheAHCtYWMcwpvpXvmSlEo(self, *args, **kwargs) -> pd.DataFrame:
         raise NotImplementedError("必须实现_clean方法")
-    def tlkfvwEnIhhhjplFwBpXIIEateACDPQf(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn, NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq: str = None, **kwargs) -> None:
-        gGJiLMZgHSyHLbQwQaZnMFbcGUALVVfD = self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws / p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu
-        gGJiLMZgHSyHLbQwQaZnMFbcGUALVVfD.mkdir(exist_ok=True)
-        if not NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq:
-            NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq = "%s.xlsx" % p.rukuqEMFToMvhUwmntcwMUFiMwmddtis
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = kwargs.pop("df_results", pd.DataFrame())
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX.to_excel(str((gGJiLMZgHSyHLbQwQaZnMFbcGUALVVfD / NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq).absolute()), index=False)
-    def CWyOtLhAlFGgfGPvyUkPlYloUNaPCVop(self, social_credit_code: str) -> Dict[str, pd.DataFrame]:
+    def VuJLWfrjEYGASQCSZzEpXbmOFSaFwUkP(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ, frUOMzEIhRGXFfDKVSDjtlRBsZujxiob: str = None, **kwargs) -> None:
+        GqmHNOzvbEOSflFqKpcbVhmMMnvyYdlI = self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF / p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf
+        GqmHNOzvbEOSflFqKpcbVhmMMnvyYdlI.mkdir(exist_ok=True)
+        if not frUOMzEIhRGXFfDKVSDjtlRBsZujxiob:
+            frUOMzEIhRGXFfDKVSDjtlRBsZujxiob = "%s.xlsx" % p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = kwargs.pop("df_results", pd.DataFrame())
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT.to_excel(str((GqmHNOzvbEOSflFqKpcbVhmMMnvyYdlI / frUOMzEIhRGXFfDKVSDjtlRBsZujxiob).absolute()), index=False)
+    def UsopDyAtGyHQjlzQOGqpFejVTPNXKzIP(self, social_credit_code: str) -> Dict[str, pd.DataFrame]:
         raise NotImplementedError("必须实现search方法")
-    def yqegznJpEfZCBrnOeGazkTzTRaNtZHvB(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> None:
+    def xkFlMYNoorjASbzEifvmHJaqdWNVLRJQ(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> None:
         raise NotImplementedError("必须实现run_detail方法")
-    def psGbathuGDCvIcqPOWLdTgdhkdpQLRwo(self, path: Path, exists: List[str]) -> List[str]:
-        for niQCGCNhivGUztAEJMlmHvBZlkwdAvVs in path.iterdir():
-            if niQCGCNhivGUztAEJMlmHvBZlkwdAvVs.is_dir():
-                self.psGbathuGDCvIcqPOWLdTgdhkdpQLRwo(niQCGCNhivGUztAEJMlmHvBZlkwdAvVs, exists)
+    def pGrRyeWwUJimlviqdFlSmdLAeVGkrzTj(self, path: Path, exists: List[str]) -> List[str]:
+        for oEukYDkNAwEYRGINtjuJddJIFhdJNIVV in path.iterdir():
+            if oEukYDkNAwEYRGINtjuJddJIFhdJNIVV.is_dir():
+                self.pGrRyeWwUJimlviqdFlSmdLAeVGkrzTj(oEukYDkNAwEYRGINtjuJddJIFhdJNIVV, exists)
             else:
-                exists.append(str(niQCGCNhivGUztAEJMlmHvBZlkwdAvVs))
+                exists.append(str(oEukYDkNAwEYRGINtjuJddJIFhdJNIVV))
         return exists
-    def xkaAdojMOnbDzqBWeMdmbEtMGDJUoqTD(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> None:
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = self.hlaRPOWdnflFlkaprCeezGZdSWMQpiJM(p)
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = self.yqewJIGtVlYasCUOnLCKcEYalrubKcZm(fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX)
-        self.tlkfvwEnIhhhjplFwBpXIIEateACDPQf(p, fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX=fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX)
-    def pOIiyEdLbhMbiPGPqvVFivMOdpJRsYNs(self, max_workers: int = 5) -> None:
-        def IyqQGAkZATWNgRtnupVSFisRnfpejqqw(worker: Future) -> None:
+    def VShNIghErUFbuDAwpKLyljFpGqPOkxWV(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> None:
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = self.uZmkFoadZltUMFQFwWMJnwVxVNwqXsof(p)
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = self.GrPvbJtykEpheAHCtYWMcwpvpXvmSlEo(huCHFGyKlLGhBMmtfGEgBswjzwjraBAT)
+        self.VuJLWfrjEYGASQCSZzEpXbmOFSaFwUkP(p, huCHFGyKlLGhBMmtfGEgBswjzwjraBAT=huCHFGyKlLGhBMmtfGEgBswjzwjraBAT)
+    def sddMtzuuMAjdvrYIJFXtmrbbqwHkrSWt(self, max_workers: int = 5) -> None:
+        def dDbZisGUiHTFzlzjNjOMJeZvnQBYIucw(worker: Future) -> None:
             try:
                 worker.result()
-            except Exception as sCnSxPcUOtYUPDvMbfDtzshhxUglEcGR:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj(str(sCnSxPcUOtYUPDvMbfDtzshhxUglEcGR))
+            except Exception as pVkxSbhhAEYXHzatDicIjdxktvFEyeNi:
+                FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ(str(pVkxSbhhAEYXHzatDicIjdxktvFEyeNi))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            gtakfnGGKzSMvmjUrkDLOWRinuGZQkCC = list()
-            for QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, _ in self.eYlERBGKUxDqGJUzdUJKihqGvuVGJmjQ.items():
-                TiVOHLpMRowpTAHbmXKQdqPzwbVYPmTq = self.dvULbSVcOqepeEaLWCpNTXIqerNVoHXz(QempkUGcRCgSlFjyOjyYGdhmMytWBYFu)
-                for rukuqEMFToMvhUwmntcwMUFiMwmddtis, RquFiQViAjRgaNwGFIqFFwxTeQjQyDLp in TiVOHLpMRowpTAHbmXKQdqPzwbVYPmTq.items():
-                    bPAnxSCGyPHwqrbAuvvWaToYlLQxQlVs = executor.submit(self.xkaAdojMOnbDzqBWeMdmbEtMGDJUoqTD, KClJvPLkdQaQWqLluAxEhkQEndovMFbn(QempkUGcRCgSlFjyOjyYGdhmMytWBYFu=QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, rukuqEMFToMvhUwmntcwMUFiMwmddtis=rukuqEMFToMvhUwmntcwMUFiMwmddtis))
-                    gtakfnGGKzSMvmjUrkDLOWRinuGZQkCC.append(bPAnxSCGyPHwqrbAuvvWaToYlLQxQlVs)
-                    bPAnxSCGyPHwqrbAuvvWaToYlLQxQlVs.add_done_callback(IyqQGAkZATWNgRtnupVSFisRnfpejqqw)
-            wait(gtakfnGGKzSMvmjUrkDLOWRinuGZQkCC)
-    def fBkewaaOifOQLmYLcdaYVNPDsrOcnKlF(self):
-        vwgwOREBYDcUcffFgzNPbBEHbOnDzEXL = list()
-        self.psGbathuGDCvIcqPOWLdTgdhkdpQLRwo(self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws, vwgwOREBYDcUcffFgzNPbBEHbOnDzEXL)
-        for NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq in vwgwOREBYDcUcffFgzNPbBEHbOnDzEXL:
-            NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq = Path(NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq)
-            rukuqEMFToMvhUwmntcwMUFiMwmddtis = NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq.name[:-len(NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq.suffix)]
-            self.yqegznJpEfZCBrnOeGazkTzTRaNtZHvB(KClJvPLkdQaQWqLluAxEhkQEndovMFbn(QempkUGcRCgSlFjyOjyYGdhmMytWBYFu=NUFyVvNrfsZZKyiYEyiAbByTNqtVQOuq.parent.name, rukuqEMFToMvhUwmntcwMUFiMwmddtis=rukuqEMFToMvhUwmntcwMUFiMwmddtis))
-    def count(self, gGJiLMZgHSyHLbQwQaZnMFbcGUALVVfD: Path) -> int:
-        tTzyYjnkDcdnuZTsSKZALomxDZkehgnr = 0
-        for GOFzpYKsXcEHaORtZPuxtvIIhIkuNADP in gGJiLMZgHSyHLbQwQaZnMFbcGUALVVfD.iterdir():
-            if GOFzpYKsXcEHaORtZPuxtvIIhIkuNADP.is_dir():
-                tTzyYjnkDcdnuZTsSKZALomxDZkehgnr += self.count(GOFzpYKsXcEHaORtZPuxtvIIhIkuNADP)
+            FCjvRjxSAmpSiDQQBiGjVBeVYmERpLTl = list()
+            for ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, _ in self.ntxazkcNjRLACPooXFBWhkDFtzLuSRuS.items():
+                ESCJdJtyxqaWwUOaMUABfcqBhZlKqMJn = self.GPOblrjSHxEOiaJtwlDpailJSWHMeVhB(ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf)
+                for wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs, hoLiVUpVhkmRjSRMoHlzDgCTtVNuuljn in ESCJdJtyxqaWwUOaMUABfcqBhZlKqMJn.items():
+                    zsnAknZrUSUQPzhgyxxoJrVLcCLswCXp = executor.submit(self.VShNIghErUFbuDAwpKLyljFpGqPOkxWV, hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ(ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf=ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs=wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+                    FCjvRjxSAmpSiDQQBiGjVBeVYmERpLTl.append(zsnAknZrUSUQPzhgyxxoJrVLcCLswCXp)
+                    zsnAknZrUSUQPzhgyxxoJrVLcCLswCXp.add_done_callback(dDbZisGUiHTFzlzjNjOMJeZvnQBYIucw)
+            wait(FCjvRjxSAmpSiDQQBiGjVBeVYmERpLTl)
+    def EHadgaTjzaZZkWccFmFHpAJhZzrdZxeZ(self):
+        kllyBqcAVVunsXeaAGBBqammcKWEgPBr = list()
+        self.pGrRyeWwUJimlviqdFlSmdLAeVGkrzTj(self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF, kllyBqcAVVunsXeaAGBBqammcKWEgPBr)
+        for frUOMzEIhRGXFfDKVSDjtlRBsZujxiob in kllyBqcAVVunsXeaAGBBqammcKWEgPBr:
+            frUOMzEIhRGXFfDKVSDjtlRBsZujxiob = Path(frUOMzEIhRGXFfDKVSDjtlRBsZujxiob)
+            wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs = frUOMzEIhRGXFfDKVSDjtlRBsZujxiob.name[:-len(frUOMzEIhRGXFfDKVSDjtlRBsZujxiob.suffix)]
+            self.xkFlMYNoorjASbzEifvmHJaqdWNVLRJQ(hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ(ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf=frUOMzEIhRGXFfDKVSDjtlRBsZujxiob.parent.name, wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs=wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+    def count(self, GqmHNOzvbEOSflFqKpcbVhmMMnvyYdlI: Path) -> int:
+        pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM = 0
+        for VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx in GqmHNOzvbEOSflFqKpcbVhmMMnvyYdlI.iterdir():
+            if VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx.is_dir():
+                pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM += self.count(VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx)
             else:
-                tTzyYjnkDcdnuZTsSKZALomxDZkehgnr += pd.read_excel(str(GOFzpYKsXcEHaORtZPuxtvIIhIkuNADP)).shape[0]
-        return tTzyYjnkDcdnuZTsSKZALomxDZkehgnr
-class QpCOhBHCvkECiYKEoRyNrIbJKTEajoFJ(nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs):
-    roELkDjnLPKeziaHSxfGeDEqPSSEtbjd = urljoin(nEMzSGXbvYixuxUAuVpUUfAGQHRhxBSs.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/dataservice/query/comp/list")
-    WEShIZRlpBGOEmfwzwfSKAocjNNESUcx = "RY_ID"
+                pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM += pd.read_excel(str(VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx)).shape[0]
+        return pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM
+    def nhrNTbcecLSVLycxmdYgkwYScBqpvgIp(self) -> List[str]:
+        pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM = list()
+        ymFuzeIrXbKVNiWYxOQwJPNgGaCpfRXE = 4765
+        def upHxPghlLfgORIaspROOQZtrxQpYgJqI(path: Path) -> None:
+            for VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx in path.iterdir():
+                if VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx.is_dir():
+                    upHxPghlLfgORIaspROOQZtrxQpYgJqI(VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx)
+                    continue
+                HeMlYNnoKcBwUVMMIPXdZyQxJMxJwBGd = len(VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx.read_bytes())
+                if HeMlYNnoKcBwUVMMIPXdZyQxJMxJwBGd == ymFuzeIrXbKVNiWYxOQwJPNgGaCpfRXE:
+                    pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM.append(VTLiRkmMPVcewtLshBXHLOPyuwmCJJTx.name)
+        upHxPghlLfgORIaspROOQZtrxQpYgJqI(self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF)
+        return pBizBniRtVbJTKlGfgIdkXrhyLFgWAtM
+class reVGAbtVYWNkyjNkAdRsYwOolbiulwNL(CfkTymDEiTkwBOfnkJWcnzktlsYJwHRl):
+    cHYEkVVrLpUKYWszhBwYWoTcQQZfrEil = urljoin(CfkTymDEiTkwBOfnkJWcnzktlsYJwHRl.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/dataservice/query/staff/list")
+    rPVCgwJgjazyPQEQbdAPkEwALihzTfDx = "RY_ID"
     def __init__(self) -> None:
         super().__init__()
-        with open(self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws.parent / 'token.txt') as f:
+        with open(self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF.parent / 'token.txt') as f:
             self._access_token = f.readline().strip()
-        self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws = self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws / '建设工程企业'
-        self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws.mkdir(exist_ok=True)
-    def yqewJIGtVlYasCUOnLCKcEYalrubKcZm(self, fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX: pd.DataFrame) -> pd.DataFrame:
-        keys = ['RN', 'QY_ID', 'QY_ORG_CODE', 'QY_NAME', 'QY_FR_NAME', 'QY_REGION', 'QY_REGION_NAME', 'OLD_CODE',
-                'COLLECT_TIME', 'QY_SRC_TYPE', 'QUALIFICATION_TYPE']
-        values = ['序号', self.WEShIZRlpBGOEmfwzwfSKAocjNNESUcx, '统一社会信用代码', '企业名称', '企业法定代表人', '区域代码', '企业注册属地', '原始代码',
-                  '注册时间', '数据类型', '资质类别']
-        if fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX.empty:
-            fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = pd.DataFrame(columns=keys)
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX['COLLECT_TIME'] = fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX['COLLECT_TIME'].apply(
-            lambda x: datetime.fromtimestamp(x / 1000).strftime(PyRKeolnbWAvwgdWyTnAKAvREzqaxKNK))
-        QkNbylUalOVCDBvxlzEuOSQfPxubBkGO = dict(zip(keys, values))
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX.drop(columns=['RN'], inplace=True)
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX.rename(columns=QkNbylUalOVCDBvxlzEuOSQfPxubBkGO, inplace=True)
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX.drop_duplicates(inplace=True)
-        return fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX[values[1:]]
-    def vgdZsDtjjzlIoujQlZyOkPFIwulGBMYx(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> Dict[str, str]:
-        params = {"pg": "0", "pgsz": "15", "total": "0"}
-        if not p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu and p.rukuqEMFToMvhUwmntcwMUFiMwmddtis:
-            raise ValueError("必须输入province参数后再输入city参数")
-        if p.rukuqEMFToMvhUwmntcwMUFiMwmddtis:
-            params.__setitem__("qy_region",
-                               self.dvULbSVcOqepeEaLWCpNTXIqerNVoHXz(p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu).get(p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, self.JncPSEQThTeKCVnLeoXhsqHLPxgmqJdr))
-        if p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO:
-            params.__setitem__("qy_type", self.mcHGlOoLmvdqHxkJjaKKBUuRHGHRCzIG(p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO))
-        if p.qualification_name:
-            params.__setitem__(
-                "apt_code", self._apt_code_map.get(p.qualification_name, self.FjVcnsErJpDpYvFSnTXILrewRsouZgUp).split(self.almCVMbwKTyUlpaXTGEKXeSNEOhwIuqV)[0])
-        return params
-    def QLulpVEpugYLreOjlHgIiaRzXfHNKysO(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> int:
-        params = self.vgdZsDtjjzlIoujQlZyOkPFIwulGBMYx(p)
-        while True:
-            try:
-                MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(self.roELkDjnLPKeziaHSxfGeDEqPSSEtbjd, headers=self.adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH, params=params, proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
-                                        verify=False)
-                FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                return int(FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('total', '0'))
-            except (Exception, requests.exceptions.ConnectionError) as _:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封, 请稍等...")
-                time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
-                continue
-        return 0
-    def fBsOWhLnfwfflKfqQvJSHQRrHQIdSogY(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> pd.DataFrame:
-        params = self.vgdZsDtjjzlIoujQlZyOkPFIwulGBMYx(p)
-        ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj = 0
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = pd.DataFrame()
-        while True:
-            if ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj > self.XGdILeHGYWIvQvmnMWglFTSlmumBLIfc // int(params.get('pgsz')):
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("%s条件下的总数超过了%s条" % (p, self.XGdILeHGYWIvQvmnMWglFTSlmumBLIfc))
-                break
-            params.__setitem__('pg', str(ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj))
-            try:
-                MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(self.roELkDjnLPKeziaHSxfGeDEqPSSEtbjd, headers=self.adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH, params=params, proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
-                                        verify=False)
-                time.sleep(secrets.choice([XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi // 100 for XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi in range(10)]))
-                FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-            except (Exception, requests.exceptions.ConnectionError) as _:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封，休息片刻...")
-                time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
-                continue
-            TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs = pd.DataFrame(FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('list', list()))
-            if p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO:
-                TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs['QUALIFICATION_TYPE'] = p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO
-            if TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs.empty:
-                break
-            fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = pd.concat([fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX, TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs])
-            ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj += 1
-        return fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX
-    def dRGbuYbOMXeDgGCSxyLTEqfhWjDdNNoj(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> pd.DataFrame:
-        sdYWzWijNLAxfFgreUVdYJTMPSZOqTbW = ("勘察企业", "设计企业", "建筑业企业", "监理企业")
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = pd.DataFrame()
-        for QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO in sdYWzWijNLAxfFgreUVdYJTMPSZOqTbW:
-            p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO = QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO
-            total = self.QLulpVEpugYLreOjlHgIiaRzXfHNKysO(p)
-            if total <= self.XGdILeHGYWIvQvmnMWglFTSlmumBLIfc:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("无须爬取资质名称：开始爬取%s-%s-%s的数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO))
-                TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs = self.fBsOWhLnfwfflKfqQvJSHQRrHQIdSogY(p)
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("无须爬取资质名称：成功爬取%s-%s-%s的数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO))
-            else:
-                TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs = pd.DataFrame()
-                olGiHyuLxMxxNFdXOQhVwNchygGbtoLw = self.hNnIDoqlJUeFFURRPysYgJERUeXEfdCv(p)
-                for UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk in olGiHyuLxMxxNFdXOQhVwNchygGbtoLw:
-                    GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("开始爬取%s-%s-%s-%s的数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO, UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk))
-                    p.__setattr__("qualification_name", UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk)
-                    TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs = pd.concat([TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs, self.fBsOWhLnfwfflKfqQvJSHQRrHQIdSogY(p)])
-                    p.__setattr__("qualification_name", None)
-                    GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("成功爬取%s-%s-%s-%s的数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, p.QvcklHNCpmZakTRaCDAMfjOkDpDLuYlO, UdofpUNgBLbSoNcPcUIurvxrlwoXLrmk))
-            fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = pd.concat([fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX, TNXyWeERjeAOxvEQqOMMQwnZEcLmykLs])
-        return fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX
-    def hlaRPOWdnflFlkaprCeezGZdSWMQpiJM(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn):
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = self.dRGbuYbOMXeDgGCSxyLTEqfhWjDdNNoj(p)
-        self._df_results = fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX
-    def oWODmytdQSuFTJzYkRyEyvtcldrgNZFq(self, qy_id: str) -> Dict[str, pd.DataFrame]:
-        def zVhMAJfcNOuizswqgEkSsmOeyoDApvZm(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR: str) -> None:
-            self.BWVliroSBpjSGzGzTibljXnbWHKRwFfC('company', OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)
-            headers.__setitem__('accessToken', self._access_token)
-        def rImtMQOfLHENulOYqgqUxWwaGlaXRiFZ(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR: str) -> pd.DataFrame:
-            lUommzFeFEVsPqmVbjuxftEXNIIDvJPH = urljoin(self.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/dataservice/query/comp/compDetail")
+        self._JZ_QY_ROOT_PATH = self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF / '建设工程企业'
+        self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF = self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF / '从业人员'
+        self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF.mkdir(exist_ok=True)
+        self._person_type = {
+            "注册建筑师%s一级注册建筑师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_011",
+            "注册建筑师%s二级注册建筑师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_012",
+            "勘察设计注册工程师%s一级注册结构工程师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_021",
+            "勘察设计注册工程师%s二级注册结构师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_022",
+            "勘察设计注册工程师%s注册土木工程师（岩土）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_031",
+            "勘察设计注册工程师%s注册公用设备工程师（暖通空调）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_032",
+            "勘察设计注册工程师%s注册公用设备工程师（给水排水）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_033",
+            "勘察设计注册工程师%s注册公用设备工程师（动力）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_034",
+            "勘察设计注册工程师%s注册电气工程师（发输变电）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_035",
+            "勘察设计注册工程师%s注册电气工程师（供配电）" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_036",
+            "勘察设计注册工程师%s注册化工工程师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_037",
+            "注册监理工程师": "RY_ZCLB_051",
+            "注册建造师%s一级注册建筑师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_071",
+            "注册建造师%s二级注册建筑师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_072",
+            "注册造价工程师%s一级注册造价工程师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_081",
+            "注册造价工程师%s二级注册造价工程师" % self.CzXZsQZkKyCkOMAxSixaJDfdyjZJyenr: "RY_ZCLB_082",
+        }
+    def DBxzaRuHwaQksXeCrgqoisDglBbfWwLQ(self, vbFqxSqeistBZkyeWIzRaiiTtASlzpvv: str) -> pd.DataFrame:
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = pd.DataFrame()
+        params = {
+            'ry_qymc': vbFqxSqeistBZkyeWIzRaiiTtASlzpvv,
+            'pg': '0',
+            'pgsz': self.urBpYPqNTvANudGGFigvVVOoQvZzlpxu,
+            'total': '0',
+        }
+        for _, dGoyFmqtvDKTaOXgYpDewJdcEcXAuNqy in self._person_type.items():
+            params.__setitem__('ry_reg_type', dGoyFmqtvDKTaOXgYpDewJdcEcXAuNqy)
+            YtdycGlQuotwcPafcuffelsjZcVWsqlz = 0
             while True:
+                if YtdycGlQuotwcPafcuffelsjZcVWsqlz > self.OcDsKjwkVHIjXkdGXnsxvGzJqgmnBUqo // int(params.get('pgsz')):
+                    FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("%s的注册人员总数超过了%s条" % (vbFqxSqeistBZkyeWIzRaiiTtASlzpvv, self.OcDsKjwkVHIjXkdGXnsxvGzJqgmnBUqo))
+                    break
+                params.__setitem__('pg', str(YtdycGlQuotwcPafcuffelsjZcVWsqlz))
                 try:
-                    MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(
-                        lUommzFeFEVsPqmVbjuxftEXNIIDvJPH,
-                        headers=headers,
-                        params={'compId': OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR},
-                        proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
-                        cookies=getattr(self, 'cookies', cookies))
-                    time.sleep(secrets.choice([XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi // 100 for XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi in range(10)]))
-                    FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                    if FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('code') == requests.codes.request_timeout and FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get(
-                            'message') == 'token失效':
-                        zVhMAJfcNOuizswqgEkSsmOeyoDApvZm(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)
-                        continue
-                    ZuyarxgtPpswbcOwABHinxicqNwqmDgY = pd.DataFrame([FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('compMap')])
-                    ZuyarxgtPpswbcOwABHinxicqNwqmDgY['QY_ID'] = OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR
-                    return ZuyarxgtPpswbcOwABHinxicqNwqmDgY
-                except (requests.exceptions.ConnectionError, Exception) as _:
-                    GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封，请稍等...")
-                    time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
+                    LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh = requests.get(self.cHYEkVVrLpUKYWszhBwYWoTcQQZfrEil, headers=self.pIlKZSYcGGlrTljsZmKqNLkyPAsZrlYa, params=params,
+                                            proxies=self.VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng,
+                                            verify=False)
+                    time.sleep(secrets.choice([SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm // 100 for SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm in range(100)]))
+                    DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr = self.decrypt(LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh.text)
+                except (Exception, requests.exceptions.ConnectionError) as _:
+                    FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("爬虫被封，休息片刻...")
+                    time.sleep(self.lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB)
                     continue
-        def DQCguoHUTOXpYjCkdZdeujapPkkMqLHw(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR: str, TUlmmJNUZiGtQXVbfzBKNDcATUvtZxMd: List[str]) -> pd.DataFrame:
-            bHHBmoKJsxXdSMBtHSxZVxhivOAoeIrl = urljoin(self.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/dataservice/query/comp/caCertDetail")
-            params = {'qyId': OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR}
-            thaDRRAkdfBgZyCkrONyQsPMRecEDARD = pd.DataFrame()
-            for WjeplnhMczJbhAopHAiunBGHlakYykfO in TUlmmJNUZiGtQXVbfzBKNDcATUvtZxMd:
-                params.__setitem__('certno', WjeplnhMczJbhAopHAiunBGHlakYykfO)
-                while True:
-                    try:
-                        MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(
-                            bHHBmoKJsxXdSMBtHSxZVxhivOAoeIrl,
-                            headers=headers,
-                            params=params,
-                            proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
-                            cookies=getattr(self, 'cookies', cookies))
-                        time.sleep(secrets.choice([XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi // 100 for XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi in range(10)]))
-                        FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                    except (requests.exceptions.ConnectionError, Exception) as _:
-                        GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封，请稍等...")
-                        time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
-                        continue
-                    if FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('code') == requests.codes.request_timeout and FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get(
-                            'message') == 'token失效':
-                        zVhMAJfcNOuizswqgEkSsmOeyoDApvZm(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)
-                        continue
-                    ZfzUshqXJIGoasCXIUcVCnrKZVvUDWOw = pd.DataFrame([FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('rawCaDetail', dict())])
-                    thaDRRAkdfBgZyCkrONyQsPMRecEDARD = pd.concat([thaDRRAkdfBgZyCkrONyQsPMRecEDARD, ZfzUshqXJIGoasCXIUcVCnrKZVvUDWOw])
+                eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ = pd.DataFrame(DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('data', dict()).get('list', list()))
+                huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = pd.concat([huCHFGyKlLGhBMmtfGEgBswjzwjraBAT, eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ])
+                if eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ.empty or eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ.shape[0] < self.urBpYPqNTvANudGGFigvVVOoQvZzlpxu:
                     break
-            return thaDRRAkdfBgZyCkrONyQsPMRecEDARD
-        def dYPepRDFDBCGFhJJyqTDcQKceuCaeoZh(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR: str) -> pd.DataFrame:
-            ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj = 0
-            params = {'qyId': OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR, "pg": str(ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj), "pgsz": "15"}
-            MPlpqeKeVymsYDdgDpRCMgMnlIDAGvsU = urljoin(self.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/dataservice/query/comp/caDetailList")
-            ZuyarxgtPpswbcOwABHinxicqNwqmDgY = pd.DataFrame()
-            while True:
-                if ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj > self.XGdILeHGYWIvQvmnMWglFTSlmumBLIfc // int(params.get('pgsz')):
-                    GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("%s条件下资质的总数超过了%s条" % (OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR, self.XGdILeHGYWIvQvmnMWglFTSlmumBLIfc))
-                    break
-                params.__setitem__('pg', str(ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj))
-                try:
-                    MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(
-                        MPlpqeKeVymsYDdgDpRCMgMnlIDAGvsU,
-                        headers=headers,
-                        params=params,
-                        proxies=self.dZbuAEtfkzKDeRYrZtcNKqJwTTfMZdVO,
-                        cookies=getattr(self, 'cookies', cookies))
-                    time.sleep(secrets.choice([XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi // 100 for XuIXhAOOtAmVfbPvDjXcBDFAbaZjwzKi in range(10)]))
-                    FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                except (requests.exceptions.ConnectionError, Exception) as _:
-                    GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封，请稍等...")
-                    time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
-                    continue
-                if FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('code') == requests.codes.request_timeout and FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('message') == 'token失效':
-                    zVhMAJfcNOuizswqgEkSsmOeyoDApvZm(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)
-                    continue
-                ArTCfrxaXchXpkGjljeAmYcOKIEJCqmj += 1
-                ZVoBvrtWldxnCvNhItPAscQvRWuoieON = pd.DataFrame(FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('pageList').get('list'))
-                if ZVoBvrtWldxnCvNhItPAscQvRWuoieON.empty:
-                    break
-                TUlmmJNUZiGtQXVbfzBKNDcATUvtZxMd = ZVoBvrtWldxnCvNhItPAscQvRWuoieON['APT_CERTNO'].unique().tolist()
-                thaDRRAkdfBgZyCkrONyQsPMRecEDARD = DQCguoHUTOXpYjCkdZdeujapPkkMqLHw(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR, TUlmmJNUZiGtQXVbfzBKNDcATUvtZxMd)
-                ZVoBvrtWldxnCvNhItPAscQvRWuoieON['QY_ID'] = OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR
-                rDcWnpSKDvSJFUozfrZAuYJooeocaIiD = set(ZVoBvrtWldxnCvNhItPAscQvRWuoieON.columns).intersection(thaDRRAkdfBgZyCkrONyQsPMRecEDARD.columns)
-                qVmSPkNjxdFsWVlxSQnYyWwVvpOSLjBx = 'APT_CERTNO'
-                ZVoBvrtWldxnCvNhItPAscQvRWuoieON = pd.merge(
-                    ZVoBvrtWldxnCvNhItPAscQvRWuoieON,
-                    thaDRRAkdfBgZyCkrONyQsPMRecEDARD.drop(columns=rDcWnpSKDvSJFUozfrZAuYJooeocaIiD.difference([qVmSPkNjxdFsWVlxSQnYyWwVvpOSLjBx])),
-                    'left',
-                    qVmSPkNjxdFsWVlxSQnYyWwVvpOSLjBx,
-                )
-                ZuyarxgtPpswbcOwABHinxicqNwqmDgY = pd.concat([ZuyarxgtPpswbcOwABHinxicqNwqmDgY, ZVoBvrtWldxnCvNhItPAscQvRWuoieON])
-            return ZuyarxgtPpswbcOwABHinxicqNwqmDgY
-        headers = {**self.adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH, 'accessToken': self._access_token, 'v': '231012'}
+                YtdycGlQuotwcPafcuffelsjZcVWsqlz += 1
+        return huCHFGyKlLGhBMmtfGEgBswjzwjraBAT
+    def uZmkFoadZltUMFQFwWMJnwVxVNwqXsof(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> pd.DataFrame:
+        msWYVhbyuYkBsMMcrgfFwMenjfqQVGIB = pd.read_excel(self._JZ_QY_ROOT_PATH / p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf / ("%s.xlsx" % p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs), usecols=['企业名称'],
+                                   dtype=str)
+        ZNxIqcGOWyoXqJGxsVwKdQYyWVLhHLmV = msWYVhbyuYkBsMMcrgfFwMenjfqQVGIB['企业名称'].unique().tolist()
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = pd.DataFrame()
+        for vbFqxSqeistBZkyeWIzRaiiTtASlzpvv in ZNxIqcGOWyoXqJGxsVwKdQYyWVLhHLmV:
+            eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ = self.DBxzaRuHwaQksXeCrgqoisDglBbfWwLQ(vbFqxSqeistBZkyeWIzRaiiTtASlzpvv)
+            eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ['QY_REGION_NAME'] = "%s-%s" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs)
+            huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = pd.concat([eUMJfXzUkhlXQlvOOAWGwgubXPyDexJJ, huCHFGyKlLGhBMmtfGEgBswjzwjraBAT])
+        return huCHFGyKlLGhBMmtfGEgBswjzwjraBAT
+    def GrPvbJtykEpheAHCtYWMcwpvpXvmSlEo(self, huCHFGyKlLGhBMmtfGEgBswjzwjraBAT: pd.DataFrame) -> pd.DataFrame:
+        if 'RN' in huCHFGyKlLGhBMmtfGEgBswjzwjraBAT.columns:
+            huCHFGyKlLGhBMmtfGEgBswjzwjraBAT.drop(columns=['RN'], inplace=True)
+        return huCHFGyKlLGhBMmtfGEgBswjzwjraBAT.drop_duplicates()
+    def VShNIghErUFbuDAwpKLyljFpGqPOkxWV(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> None:
+        FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("开始爬取“%s-%s”的人员数据" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+        if (self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF / p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf / ("%s.xlsx" % p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs)).exists():
+            FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("已经爬取过“%s-%s”的人员数据" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+            return
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = self.uZmkFoadZltUMFQFwWMJnwVxVNwqXsof(p)
+        huCHFGyKlLGhBMmtfGEgBswjzwjraBAT = self.GrPvbJtykEpheAHCtYWMcwpvpXvmSlEo(huCHFGyKlLGhBMmtfGEgBswjzwjraBAT)
+        self.VuJLWfrjEYGASQCSZzEpXbmOFSaFwUkP(p, huCHFGyKlLGhBMmtfGEgBswjzwjraBAT=huCHFGyKlLGhBMmtfGEgBswjzwjraBAT)
+        FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("成功爬取“%s-%s”的人员数据" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+    def zFynzhYKcKcbkKfsPcpbIrxoGNJyfjlq(self, tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW: str) -> Dict[str, pd.DataFrame]:
+        headers = {**self.pIlKZSYcGGlrTljsZmKqNLkyPAsZrlYa, 'accessToken': self._access_token, 'v': '231012'}
         cookies = {
             'Hm_lvt_b1b4b9ea61b6f1627192160766a9c55c': '1698365699,1698506447,1699107222,1699279591',
             'Hm_lpvt_b1b4b9ea61b6f1627192160766a9c55c': '1699399352',
         }
+        def HwoayyvqJPqrwEhnRuvJERTIhBkZoIfW(region_id_: str) -> None:
+            self.loWvxTrhNleTPGoQcYKAUYXVLmCIydVu('person', region_id_)
+            headers.__setitem__('accessToken', self._access_token)
+        def ktadQWNrwuwlLxgGNKpnPoNxAjlondbh() -> (pd.DataFrame, pd.DataFrame):
+            MTsEFemWUkbiHcDaDepsJNmdFIgWsVvw = urljoin(self.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/dataservice/query/staff/staffDetail")
+            while True:
+                try:
+                    LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh = requests.get(
+                        MTsEFemWUkbiHcDaDepsJNmdFIgWsVvw,
+                        headers=headers,
+                        params={'staffId': tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW},
+                        proxies=self.VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm // 100 for SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm in range(10)]))
+                    DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr = self.decrypt(LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh.text)
+                    if DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('code') == requests.codes.request_timeout and DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get(
+                            'message') == 'token失效':
+                        HwoayyvqJPqrwEhnRuvJERTIhBkZoIfW(tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW)
+                        continue
+                    ZREKUnYuTuoEanYnXpBbCUiPATtLEsym = DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('data', dict())
+                    if not ZREKUnYuTuoEanYnXpBbCUiPATtLEsym:
+                        break
+                    LuNNKhqnhUBibeSqRKBktpvMqLqzODFQ = pd.DataFrame([ZREKUnYuTuoEanYnXpBbCUiPATtLEsym.get('staffMap', dict())])
+                    LuNNKhqnhUBibeSqRKBktpvMqLqzODFQ[self.rPVCgwJgjazyPQEQbdAPkEwALihzTfDx] = tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW
+                    YGHOgxhiOKRvpCDjpAdFXsLoJTDTyEqR = pd.DataFrame(ZREKUnYuTuoEanYnXpBbCUiPATtLEsym.get('regCertList', dict()))
+                    YGHOgxhiOKRvpCDjpAdFXsLoJTDTyEqR[self.rPVCgwJgjazyPQEQbdAPkEwALihzTfDx] = tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW
+                    return LuNNKhqnhUBibeSqRKBktpvMqLqzODFQ, YGHOgxhiOKRvpCDjpAdFXsLoJTDTyEqR
+                except (requests.exceptions.ConnectionError, Exception) as _:
+                    FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("爬虫被封，请稍等...")
+                    time.sleep(self.lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB)
+                    continue
+        def yDHpmEujHWAGijpxnOzSRNpgTkSzMuhQ() -> pd.DataFrame:
+            aPETsPVSIQxJBESVdyNjCOdHrNTuTbmb = urljoin(self.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/dataservice/query/staff/staffWorkRecordList")
+            while True:
+                try:
+                    LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh = requests.get(
+                        aPETsPVSIQxJBESVdyNjCOdHrNTuTbmb,
+                        headers=headers,
+                        params={'staffId': tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW},
+                        proxies=self.VeQHatCfHwIDJqIIYYQjJXlvLEAtkMng,
+                        cookies=getattr(self, 'cookies', cookies))
+                    time.sleep(secrets.choice([SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm // 100 for SGhiWyNgvTTQFkKKCGAVzKYbwIqakXlm in range(10)]))
+                    DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr = self.decrypt(LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh.text)
+                    if DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('code') == requests.codes.request_timeout and \
+                            DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('message') == 'token失效':
+                        HwoayyvqJPqrwEhnRuvJERTIhBkZoIfW(tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW)
+                        continue
+                    return pd.DataFrame(DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('data', dict()).get("dbMapList", list()))
+                except (requests.exceptions.ConnectionError, Exception) as _:
+                    FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("爬虫被封，请稍等...")
+                    time.sleep(self.lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB)
+                    continue
+        UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH, FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ = ktadQWNrwuwlLxgGNKpnPoNxAjlondbh()
+        HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV = yDHpmEujHWAGijpxnOzSRNpgTkSzMuhQ()
         return {
-            'company_detail': rImtMQOfLHENulOYqgqUxWwaGlaXRiFZ(qy_id),
-            'qualification': dYPepRDFDBCGFhJJyqTDcQKceuCaeoZh(qy_id)
+            'person_detail': UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH,
+            'practice_registration': FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ,
+            'record_list': HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV
         }
-    def yqegznJpEfZCBrnOeGazkTzTRaNtZHvB(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> None:
-        SpOeaZlmIgnQvaVzBgRQZSEVUDDXENOi = self.gCVQTnKPldvAbKDdGxFhiKmTvnLxriws / p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu / ("%s.xlsx" % p.rukuqEMFToMvhUwmntcwMUFiMwmddtis)
-        IEnEsvdYHPZUEIBTTdJeyuoZPveHLKyg = pd.read_excel(SpOeaZlmIgnQvaVzBgRQZSEVUDDXENOi, dtype=str)
-        try:
-            KLKMdnOVHDeJrlwQFxvFWhnqzlwdnBmA = IEnEsvdYHPZUEIBTTdJeyuoZPveHLKyg[self.WEShIZRlpBGOEmfwzwfSKAocjNNESUcx].unique().tolist()
-        except KeyError as _:
-            KLKMdnOVHDeJrlwQFxvFWhnqzlwdnBmA = IEnEsvdYHPZUEIBTTdJeyuoZPveHLKyg['查询ID'].unique().tolist()
-        cOVGMcNRamTBkSgbEBTAnIHeiFOYLEDX = pd.DataFrame()
-        sTfvwOUXcqWgFlmJhipnDwRHuKtgPUSx = pd.DataFrame()
-        for sHXcRUyHLaEOhSScCpOeGUuVzXawMLde in KLKMdnOVHDeJrlwQFxvFWhnqzlwdnBmA:
-            GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("开始爬%s-%s-%s数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, sHXcRUyHLaEOhSScCpOeGUuVzXawMLde))
-            ZthnItcYRtrCzrZhJckWONVybhZPzSMp = self.oWODmytdQSuFTJzYkRyEyvtcldrgNZFq(qy_id=sHXcRUyHLaEOhSScCpOeGUuVzXawMLde)
-            ZuyarxgtPpswbcOwABHinxicqNwqmDgY = ZthnItcYRtrCzrZhJckWONVybhZPzSMp.get('company_detail')
-            cOVGMcNRamTBkSgbEBTAnIHeiFOYLEDX = pd.concat([ZuyarxgtPpswbcOwABHinxicqNwqmDgY, cOVGMcNRamTBkSgbEBTAnIHeiFOYLEDX])
-            XuNkPmKsYYJfJtzHwcuKfPtBNMIwimxu = ZthnItcYRtrCzrZhJckWONVybhZPzSMp.get('qualification')
-            sTfvwOUXcqWgFlmJhipnDwRHuKtgPUSx = pd.concat([XuNkPmKsYYJfJtzHwcuKfPtBNMIwimxu, sTfvwOUXcqWgFlmJhipnDwRHuKtgPUSx])
-            GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("成功爬%s-%s-%s数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis, sHXcRUyHLaEOhSScCpOeGUuVzXawMLde))
-        with pd.ExcelWriter(SpOeaZlmIgnQvaVzBgRQZSEVUDDXENOi) as writer:
-            IEnEsvdYHPZUEIBTTdJeyuoZPveHLKyg.to_excel(writer, sheet_name="企业数据", index=False)
-            cOVGMcNRamTBkSgbEBTAnIHeiFOYLEDX.to_excel(writer, sheet_name='公司详情', index=False)
-            sTfvwOUXcqWgFlmJhipnDwRHuKtgPUSx.to_excel(writer, sheet_name='企业资质资格', index=False)
-    def xkaAdojMOnbDzqBWeMdmbEtMGDJUoqTD(self, p: KClJvPLkdQaQWqLluAxEhkQEndovMFbn) -> None:
-        GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("开始爬取“%s-%s”的企业数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis))
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = self.dRGbuYbOMXeDgGCSxyLTEqfhWjDdNNoj(p)
-        fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX = self.yqewJIGtVlYasCUOnLCKcEYalrubKcZm(fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX=fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX)
-        self.tlkfvwEnIhhhjplFwBpXIIEateACDPQf(p, fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX=fwHoCMKeESdsqiTiQpRcRfTOcSbbxcyX)
-        GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("成功爬取“%s-%s”的企业数据" % (p.QempkUGcRCgSlFjyOjyYGdhmMytWBYFu, p.rukuqEMFToMvhUwmntcwMUFiMwmddtis))
-    def CWyOtLhAlFGgfGPvyUkPlYloUNaPCVop(self, social_credit_code_or_company: str) -> Dict[str, pd.DataFrame]:
+    def xkFlMYNoorjASbzEifvmHJaqdWNVLRJQ(self, p: hkGWOfGHcVThBcCOuXxMvPnuheTvUBrJ) -> None:
+        zzDzQTkAPOmaZrztfSbxTEMpThBZCWEc = self.sfEUtMczDPtchbmRROpLBejsPiLqyPFF / p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf / ("%s.xlsx" % p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs)
+        ICGakGHmVVTXTielfhdCkHnulEqjidVY = pd.read_excel(zzDzQTkAPOmaZrztfSbxTEMpThBZCWEc, dtype=str, sheet_name=None)
+        if len(ICGakGHmVVTXTielfhdCkHnulEqjidVY) > 1:
+            FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ(f"已经爬过%s-%s详细数据啦.xlsx" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs))
+            return
+        vWkETgZFgLtelPHYhdZwNfjZPAlVpzwP = list(ICGakGHmVVTXTielfhdCkHnulEqjidVY.values())[0]
+        atyoYwrdxoGolsztNcQwJNJBazOeQuzL = vWkETgZFgLtelPHYhdZwNfjZPAlVpzwP[self.rPVCgwJgjazyPQEQbdAPkEwALihzTfDx].unique().tolist()
+        UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH, FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ, HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV = pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        for AvivtoJDRecnsLuckpklXPAaZkRputVz in atyoYwrdxoGolsztNcQwJNJBazOeQuzL:
+            FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("开始爬%s-%s-%s数据" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs, AvivtoJDRecnsLuckpklXPAaZkRputVz))
+            tbFINyDWnZHOznqmleKVzQcSwXFIzHXz = self.zFynzhYKcKcbkKfsPcpbIrxoGNJyfjlq(tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW=AvivtoJDRecnsLuckpklXPAaZkRputVz)
+            cPVagwFZbmpjrGOuGwrOxeRoGPGBFEPk = tbFINyDWnZHOznqmleKVzQcSwXFIzHXz.get('person_detail')
+            UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH = pd.concat([cPVagwFZbmpjrGOuGwrOxeRoGPGBFEPk, UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH])
+            mZBbsbvkBBZQOtMARTIuPzjquOFEaIXz = tbFINyDWnZHOznqmleKVzQcSwXFIzHXz.get('practice_registration')
+            FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ = pd.concat([mZBbsbvkBBZQOtMARTIuPzjquOFEaIXz, FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ])
+            mqEdSJbEsNJitoZaDJFqZrWrEzjQuDWL = tbFINyDWnZHOznqmleKVzQcSwXFIzHXz.get('record_list')
+            HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV = pd.concat([mqEdSJbEsNJitoZaDJFqZrWrEzjQuDWL, HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV])
+            FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("成功爬%s-%s-%s数据" % (p.ZoHkEHmlxbRSfetjvwEuRttjhmgGkpKf, p.wADJuFqQeFLqAdlCoUsSyXbzzttuyTUs, AvivtoJDRecnsLuckpklXPAaZkRputVz))
+        with pd.ExcelWriter(zzDzQTkAPOmaZrztfSbxTEMpThBZCWEc) as writer:
+            vWkETgZFgLtelPHYhdZwNfjZPAlVpzwP.to_excel(writer, sheet_name="人员数据", index=False)
+            UPMuYJSVuvPjXGyDqQYpWRwlIpMtKuCH.to_excel(writer, sheet_name='人员详情-人员信息', index=False)
+            FOQOUamAyeGhDUEkTDIBrARwxrZUzSFQ.to_excel(writer, sheet_name='人员详情-执业注册信息', index=False)
+            HZwqFYxMZuGhLzXEVJxfSKDrmPlVJYiV.to_excel(writer, sheet_name="人员详情-证书变更记录", index=False)
+    def UsopDyAtGyHQjlzQOGqpFejVTPNXKzIP(self, person_name_or_id_card: str) -> Dict[str, pd.DataFrame]:
         params = {
-            'complexname': social_credit_code_or_company,
+            'complexname': person_name_or_id_card,
             'pg': '0',
-            'pgsz': '15',
+            'pgsz': self.urBpYPqNTvANudGGFigvVVOoQvZzlpxu,
             'total': '0',
         }
         while True:
             try:
-                MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ = requests.get(
-                    urljoin(self.HYRilGQWyaNVmTkiBUQvUMohLbNfUbYY, "APi/webApi/dataservice/query/comp/list"),
+                LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh = requests.get(
+                    urljoin(self.JqfcSTZqfXNUFjCpNtKfXsYzTscMHXoN, "APi/webApi/dataservice/query/staff/list"),
                     params=params,
-                    headers=self.adYxBSyDkNPWYbRrBsGUBCfzgFvgoQUH,
+                    headers=self.pIlKZSYcGGlrTljsZmKqNLkyPAsZrlYa,
                 )
-                FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ = self.decrypt(MssuTWyjJSQBROxJJNeBswcqBjkPRhQJ.text)
-                BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu = pd.DataFrame(FMEAqVhwIuQRscPQJhvvuNAmefNthTnJ.get('data', dict()).get('list', list()))
-                if BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu.empty:
+                DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr = self.decrypt(LXYnitRMdfNayoHiLBpmCtzuEYgmcJIh.text)
+                fnBUesaMmhaTLTDDfvYhhJogJyhWghGW = pd.DataFrame(DwJdCWlyhsaQXboeAmlaqvtcfGjgXlMr.get('data', dict()).get('list', list()))
+                if fnBUesaMmhaTLTDDfvYhhJogJyhWghGW.empty:
                     return {
-                        "enterprise": BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu,
-                        "company_detail": pd.DataFrame(),
-                        "qualification": pd.DataFrame()
+                        "person": fnBUesaMmhaTLTDDfvYhhJogJyhWghGW,
+                        "person_detail": pd.DataFrame(),
+                        "practice_registration": pd.DataFrame(),
+                        "record_list": pd.DataFrame()
                     }
-                OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR = BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu['QY_ID'].astype(str).unique().tolist()[0]
-                BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu['QUALIFICATION_TYPE'] = ''
-                BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu = self.yqewJIGtVlYasCUOnLCKcEYalrubKcZm(BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu)
-                rFQfRWCIKTiGhdCFAvINrepqSfiPPGTO = self.oWODmytdQSuFTJzYkRyEyvtcldrgNZFq(OGNXqdtFDaFExzWBHeQZlVbmCVWFsjiR)
-                return {"enterprise": BRZyJDcXDKsezwwiuoSFNTRJntrGRIbu, **rFQfRWCIKTiGhdCFAvINrepqSfiPPGTO}
+                tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW = fnBUesaMmhaTLTDDfvYhhJogJyhWghGW[self.rPVCgwJgjazyPQEQbdAPkEwALihzTfDx].astype(str).unique().tolist()[0]
+                fnBUesaMmhaTLTDDfvYhhJogJyhWghGW = self.GrPvbJtykEpheAHCtYWMcwpvpXvmSlEo(fnBUesaMmhaTLTDDfvYhhJogJyhWghGW)
+                lQawpHTIqnsbowFJNQdpCcmzYwqpjKUC = self.zFynzhYKcKcbkKfsPcpbIrxoGNJyfjlq(tQzXnRIyCUrGRHtsQwPylwcKVkPKNDUW)
+                return {"person": fnBUesaMmhaTLTDDfvYhhJogJyhWghGW, **lQawpHTIqnsbowFJNQdpCcmzYwqpjKUC}
             except (requests.exceptions.ConnectionError, Exception) as _:
-                GvMobTWcuvVsCZUTqbliBJmuGLHmACKj("爬虫被封, 请稍等")
-                time.sleep(self.AiEARnpoXZDqNOpfSjVavwAQZtZfmXyF)
+                FcyMLZjgExfjSseYOpPFXGefLwGEDrNZ("爬虫被封, 请稍等")
+                time.sleep(self.lOuGeclSaeqBZfrgqaRGZnJWXPlvMOfB)
                 continue
 if __name__ == '__main__':
-    jTIoQIDqyjkCdbkMFSgZoaPtcPWxVRIL = QpCOhBHCvkECiYKEoRyNrIbJKTEajoFJ()
-    jTIoQIDqyjkCdbkMFSgZoaPtcPWxVRIL.fBkewaaOifOQLmYLcdaYVNPDsrOcnKlF()
+    SffCsworfiJZlpEONvvAicTcIGqfVzna = reVGAbtVYWNkyjNkAdRsYwOolbiulwNL()
+    print(SffCsworfiJZlpEONvvAicTcIGqfVzna.decrypt(
+        "5588a9e126c91a28cc2f6813e3793369cab248e1aa728c4584bb5b9b14eae57e7c7033c04f9ef77b550f53033750519209328b4cb6c500c6cecc5a7195b06017680875f890a05320e4c9c36d9300ce2ebf666c21c697af298e635eddbcfd173d9959cd5f29d8a71ca332e8888754d9ed81b839c8c2e5e44a7f6fa8eae8b8b4d4d27ccfc1637637fc96fa9277574c7055884def2653ea2896925052318ceb035b95923c0c2a8fcac3822157f8b6f03aa3dd98d4bbcd1578257aea1da917ac557b3e7f500aa04a9b9838c9dda156309ab958d991fb96165eb04ebfe9f5ef7dcf37731cd7380b4963103b40bedbde9b5a1921477b5605d0774be82d6f19fd78ad522037faaad7a031630ac40538e4e3849390ea2b03eb99d2c1671e24fd36d07b5fba459fcc16b14209c39eb60252e6b525c02dcd721293e7989bc61e2ec2caa88ea3788da4887e15b8a365c953a6b9a5dc16b35238c4f783a202f9351342186c42d15462e0d8b81ca6f3a148c62443c2bbaed1b67d2ac16b96d73701ea8da48f13024d4cb0313451292ee23696bb698a2347a65288dcf5247211f8d2eff17d8cc91e77a74fe633cc97f03e0891ab9f1354cfc210ffc0e140641ce6e31892f61810ef5ae7067411debc6300c58ad9dc255cf173dc163748e0b96bc4d4ba518c71f0ba3df445b35645a93d3530660abc86bf24e6526cfe767f0f0fa2c0790c8589e4de944bb5ef1538c18bd9a38d5146d8bf96ef919cb39ddde1af82dbbb62455dab86bf8d19c6ed2a0b7c12e864fb3529ba9be1699a20f215919beb08140fb93d478c01abd777066ab6a112383ddfca379025f496cda0ffae52d9a802c136d1a47b8da56322a6fd30d45422faa5f569b8b5402ce01b797678c232ecefb7076bb1dac86d1c16322388bc4d7e2461637ad0d9f2ee5b524faf0def00f5ad4bfa622aebffe216316756921d5a3fdece171160e9404c6dfca40ec6b3b5d77932bec3b85ca16f1795e81074a5d2fbb4bcc674b256bc395e5687c43f611ab3ad5ce07966a5a3557e526d4af244928f974b9883a5c73f355f34228878e4b78fbcd4b0f13ae23ba541edaf42728ce2dd0930b2e53783f1355a1b118d716fbcf477ba9637b2f72c289b96992de9440c39e9348c1503bb582dae19816b1c5ec2d866970d12bcc2fd22a2edf253657a87de38991c8a4e4a9a9807a2354de2f4e832fc847aaa3fce5b13caf75984d43b6d38b60e8e86ef04be9b3fd072f38a33725c24dc18e41fae3b11067d3317f132d9571f8b75a575926fbb308df11e6aa25c33b007aa967d8a4061a877d0d9e380fc628c9035c1f641e942485844ac2581ed0f63a36289564da2437736c7151586865645ba9bf36ce6c899bc9b609903853951c7b6bc00fdeb91b4c369158c4c0e27f54938828a3f996d8e784c5196ea0adf058c59ad5c65bee40692e265b70673b0a00b7a0acbaac7f3c9ca17e4ec59ba64d5f5c78a09851b80eaa480043c3d3e90fae5696031c95870edace8f4e68fff7a74b968bca9e957a3d62f9d1b6353f8b6ed2bd0fc88905a740e259e7e2185acf4373c446baeb2c250728dc95f898f79552342747542e0cd93acbd2d9ae8a68b6f0616c1b3e5f585ec40c497600cfd10551522b390573edecf7ab2b3ee15652f79bc9f30d37f4851bb87c0d2ffe8fdee0f7bdd4cbad81e45dce17a092347dfc3a691b79122517a6596c479a28006a0a32c134ac56dff696bb534c67b61c4d019906978b6d0aae878e5807fb34ccb99d40d5810d1069e697c4552c1612a1db4f33e47a635732d33fcec8fc2be2a7d3297a7a69e0cc309bea63b9a8d4f6a2b4420f8a0f612c92329a19351bc4e5ecef470484de163ff9b0318ac85d820791fd638bb3920258b70e9a70252f3581172ce8ab475c5ed7333537dba4831e85905a7debf704c48409df82ba5076f3cc44be1cb2e501a46b30aa1b913d2282c35eb975ee660bd6c78cb56fceb50c09bb75beb1ae571519420f5b04be712705506cd1887486b8463cae65cb9d4026868701d45bd5eb9fe2849299329f6344b2b744ee1047374832a8d323270568a823bc898cce85c05b57c0c2aca8f81852ed57043f29e69d38aaef27f6ddda006d86704ee751e0110b548ce5bec1a915ecce01024843a76f9cc908a32745a1a2733fc5334325cf053a07532903a197b089b7cca48c8ff68e99e76d0d251536008e5560306c0b453e06d3b20a81591c1f5d71bbf4c5cfd3e433387be64a6be735631e2a890c4cccb43674f301e8127b46cb8d19ed778346f029acb2b8072509a9fc18bdaaea2bc1ddd3f18d3cc376ae91ffc1c2f805324505a9a2ba42fd74dbfaca0808487ea79c815cf47d75ab3103cd886c2a04c0280df068968b4eaf2d4534dadac40a604b765cd914f06ddc56b4a175cb32f06cf976f5a18d2ad591543103d56d63b65f351fe6f92dd797f42e5a8cef7077bc16e454fcb415a126088194e57b4a03d00781b22dfe66eef88b4050a036631c20f670ab7df54ee5976a67fde2e72949ee42230c6dda2b3de2fb0678c0cff56b70ef94c5ae77d277841d541c60f1dbe3dcdeb85379772bb7713ea4d11745f6f80ed2df34508e39e0e03eb1c1a43a7e02e1e0a98cb53b4c3f1d972288a166c15fd2dd23ffb3975b90e67c5f57fcd22e3c1fc05d8a0488faddaf54457bfdaa2cb5320eaa915a64e049185e97c0e5e47e677cba7ee8f6d7fa621fca4c3bc6fb1bdc6b7ca82716a2c04b046018cb1037366e42c7230d18704f4887c6f04586397d99990b09900255c77303a61c2cfccb0420c49addd97118b38494c8508af931c52457c1d84162c4fc4e8aa1e5c41d30765a65e92f3f9bbae0bb7636c7539610fbcde2f20fa639ad9cddfc9fb1002a4abf971fbda449276bbd780559852751dbfe19595305f75abd0c53543b481bbf92f6205d51a7eb46dfb1ab2d45c16606e6e320d29ca76ad3de344f53ac3c6b73c2eff7b0ad1a5166265f458752edbf51cbea7c6012ca19b7ace0fb4d8178a2a175ec1e5a33aafde89e665db4fbdd064bf9eaa5c53c26aac7c323d0198f9c61d2e9dcea04ad89ac89b192dd6cacd31835996ba57f836314b15c2feaf3fa1640fbfd9cb7b007c512e0c677deaba963742cf420c9f6b4957421258c002accd197e090e8bdcd39c1799da42bbf49e309135b07968143dfb1c95ea9c967609dc6e532fce127668ed09247c61ac48bd5fa7954308fd4af849317ede0d9d1bfe7f5c048cb0f41ca39c775dc188ae6078d4d8a60a439d9adff00844600a74fd83d6d543b9def59aef1680d02afe53e5c5b3555e0cfbc8d450003ed1c760c1931bad7caa46ef58ee6b010ce58ba9865ee66545a739c69b47723abe02e8e7edc8e2e874fa2bc1b57c2db5ef918eca8461e447b3aaf8345e06631112dfd28a641a38293f2bb595360b4d30c8abd3e3770ca7d373ce1653ca80214b85fd9da982a1a756e17ff6125495f7c2cb9370b260b2fb58e200afff5c7574e0b0cad6088a1c282e5a89dbed38556ad3376ff2f38b263881b9baaaf35fd2c3eef5321cc56ef5310a7e468eac6215fcd0d0a5e523c316b3fcb0676e9a21777c3a07ce743bc0341323f6f685694f0d95d4846219d4ad08b250d9f534837c5d11c26091d87b1d6aaa442335c808501cccc3a18977cee63746c36d05517c39dfa55d20b59888760863951f94e921636f6fcaed834e5415219a6b517baa3251472804e78402030c36c83f34f8e79a1538f7926bf08fc06b72d3250630bf1a6c40b6e897903a8bcf49e46a6bb80ccf435ab5d8eef4fcef2c004c29318265c1e48728c1596d44f686f6337c4523587b10a9285a47171089056ea7cd9bfd15b3e07b720e567126b10b4f3eda12635b73927f42e6670ae8605adfb6f3ea1e7da3f92f7b33d0706f51470419e64375f4ae0957c7c179f460d94bb6ac82e11fa0a6705182349aa7071e848b44425e1585c66638271d9f4d044baf4d94821928818deab5350bccc4bfd778a16aa9992bc92eba8dce8a942fd7ca0f8e9bc40063c35c6da6a48c3e68c8827b58fe3c48cf262bb95071105830344b8d5aafdeee28e8e6fc295dd64ddfdfc12a239488221fd75f37f53151fd126d37cebab10892901a7eb352b751efec213fd6af9349b88c59a2288d7c58295554b7932ca355e518e30d9f1d08157b7fd4e45c61ad1f55a565201a87b5744a228dfadbc145f55346e3eb342bd62434bf61ae476591abedad6c5b06760cf16dde6da597f2dbda5bf9b3981eb12cb00ac09e44422b194bf2551151082ed5b637e0cc1d13cc345eeac60db03be6a97fbf3943b7ba745c2457ff3d939dde624e1a13048518953b909c0ed1d73ae5142e05b3af410b7da4c347f28d5d17035e9a3e57b9b5dce791fbad580f846bbdadeff166c6f8715ffe37de3ae1a6483a05c1ddf77b156a0c0d8d7b2cd791c8647cd805b4bbda33acd9187f1840f3bfbf445f71052f41fe3639df62f7282dcddcfec3d532a076b18a4c99295fc1551fab62aec1e730d9d91e798c613f7be62d680884e51b981c617b89dd263e844c735a5f38cf729b4a32964c32c85a6d2dea97d617fcac5e01999e85940c3bd7edf83dc3ee2a49216d7e92bf9b7f36a8e7e0e6c888d0a8e9629e6a457dea5fd205f293b450bdf29857d49e04156763ca55d680362e0a448d7cec3a5d951028395a2c6bf490a23b9f027cdf3cea5d57435ad14d3d60214aca17d45577e343aa6d3a7d1926a1c75ed5826b4b20fff45b5660fdc98b6042b6e0d860ac60d8096dc1bce47750fdd047b2cf0da458b68be0bab9d2d0ce9396037dd332bed1dfcec0041865ff29d2e44023a1e91d5e918f6fd186a8f018873b2d5395e8aa3d2edbcf4561dba671231a9b8634c1cee8dc82dbe93f7d64f9ad0af455ca6a41c76a0c6945177352692d38d83f5b954e84b7765f11e0d7ab303f3f4f7e66f590fabc832ebdcf66f7d438d031202f95d1b34a4451429f5c0b5f4775895e9b0e1315d93d5c197bfaa3ac9b30f139cba7fe70333e921a8b96eb3be52a6291d4cab1eb0d8f3b8f3e20d55aab5ac1b90892b1ac2120973cd5053c96df09adabdb0e2a9d63fdccbc5007759de54c9de579e4c040378e0692f6a2ef6cc970f90b800938f420c47de1405934991a252bad53e2963f62640b98e8fea57d53031843a9dadc463830f9be03fe71d7dde178d106a75a973054f7723b581ddb5c729d187bbea9a961cc17e034e17d4fc9db3441887bb6590bd7972ee219a007a177c9c5411e059e207f973ef6c946ddc31376f9178639e09137d2621065d78bbe812b452fca150082ca2947ca886916f93eddf7b315575d803ba4e3dcaa72b788667bfbcf014050faaa648bbc48ad68ea9b1728550b41e0a6c4d678b297e798f7c60f5b19cc4aad07b4fd1b5d1f1719dd44d9c7cf33ede8af4860f4a3279a04962387d64b589bfb4ecbf4fa84b7dd035773ca6d2a5a7d4f9c65bae7ed0626b0f5e779d79ad459bd15360d97f84e93b4732ecee7a9ce3c83a609569309e466890d6e70f0bb5583747a40e139f09e54f101a7f4c2791387ccf1eff6993bd90a3992ecca633666c1afb8f18d4f952516229998184a03867eaae863a54bdd3cd5811dbacfc959039149045860e0fa7ef4069e024382d2fd12b3102477959dd8116d7f7fcb5e451fd0980265b2795c09d00d18d8c2caa774a3a548030bd97d19290a16c66316fd92760d121d4408c6d9ca0c31a0a97443119a28416a5c4d2d51dba2c3ff0bedd005e736f9b11074a440238beae1df30e64aa83bab3db0ded230f38e859daf8f4938c05bdfbd14e791499965d57ada01c1dc913f4ab06402b42eaaa7e5b7dfd00358636b0fa85d0a9aaf73d297a1d55e55d9f55a52e1183f9a4852f82a47746825c1ac99e8ec28f9221a862a68b1dc6d54a8d11acbd60c5f8926e5984cc49a9a18a9bad863d269b485eb796aa96d304b99bc921585c33303cfcb66bb3f35074729ddf69093b6181e639cce3677ee49f07f7f26c513b6f82dd9aa1c99d11f90b18c3731c074eb20d0b9080d6e813fe755638429b4d63e19a30474d98f13070253a547b6637b094fde9f2406d6594d757dc24952a42adf81779b881fb5c90974dfebc31104ae60ca621cc8b6702f55c63577485a9c15397d528f8f6837cb703353b4d9b2118569e7dd626dc089170054261d580ab48af66fba4cb50e85111458eb97aac9226d8c96fe764a44c4b820caa3d4fe028ce145df4ad61225f70c555855aec2206ed49a7e307403ca0f06c908eba782f7aabc06964ac50d169c9576faca1c08279f76e9935be8b9c1b61089e7b3ed328bfd40c4d6431e88a78582a1212188d188107b78434fce24e5a21de160268ca8654ae4f9760c892674b828584edf9af76274d51f7ee3cdb765f405b8f5fc67814c1fb0905c0c0af10d991ce8a3531c0785da19a434a335a40a094a93fdd4fc77e3c622e7b8a57403d3d1ab68787cc664ca0a23a0cbeda41fe01dfadafda4c723afde9ec5"))
+
+

@@ -85,12 +85,17 @@ class Geetest:
             "callback": self._callback
         }
         response = requests.get("https://api.geevisit.com/get.php", params=params, headers=self._headers)
-        data = json.loads(re.search(r"geetest_\d+\((.*?)\)", response.text).groups()[0]).get('data', dict())
-        return data.get('pic'), data.get('c'), data.get('s')
+        data = json.loads(re.search(r"geetest_\d+\((.*?)\)", response.text).groups()[0])
+        # 点选模块的数据需要取里面的'data'对象
+        if data.get('data', dict()):
+            data = data.get('data')
+            return data.get('pic'), data.get('c'), data.get('s')
+        return data.get('slice'), data.get('c'), data.get('s')
+
 
     def _generate_positions(self, pic: str) -> str:
         pic = urljoin('https://static.geetest.com', pic)
-        # todo 生成坐标位置
+        # todo 生成坐标位置(将图片发给前端，前端用户点击生成轨迹)
         return ''
 
     def _generate_w(self, pic: str, gt: str, challenge: str, c: List[int], s: str) -> str:
