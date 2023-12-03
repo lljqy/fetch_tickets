@@ -5193,7 +5193,8 @@ Me[$_CGAJ(251)] = {
             "challenge": e[$_CACFr(132)]
         }, !1);
     },
-    "$_BJIH": function (e, t, pic, c_, s_, gt, challenge) {
+    "$_BJIH": function (e, pic, c_, s_, gt, challenge) {
+        var t = parseInt(700 + Math.random() * 200)
         var $_CACJT = KttpM.$_Ct,
             $_CACIR = ["$_CADCg"].concat($_CACJT),
             $_CADAh = $_CACIR[1];
@@ -5438,9 +5439,9 @@ Me[$_CGAJ(251)] = {
                 h = H[$_CACJT(216)](re[$_CADAh(116)](o), n[$_CACJT(726)]()),
                 p = he[$_CADAh(768)](h),
                 d = {
-                    "gt": r[$_CACJT(145)],
-                    "challenge": r[$_CADAh(132)],
-                    "lang": o[$_CACJT(127)],
+                    "gt": gt,
+                    "challenge": challenge,
+                    "lang": 'zh-cn',
                     "pt": n[$_CADAh(674)],
                     "client_type": n[$_CACJT(678)],
                     "w": p + u
@@ -6901,10 +6902,10 @@ Me[$_CGAJ(251)] = {
     }
 }, V[$_CGAJ(359)](window, Ne);
 
-get_w = function (e, t, pic, c_, s_, gt, challenge) {
-    return Be[$_CGAJ(251)]['$_BJIH'](e, t, pic, c_, s_, gt, challenge);
+get_w = function (e, pic, c_, s_, gt, challenge) {
+    return Be[$_CGAJ(251)]['$_BJIH'](e, pic, c_, s_, gt, challenge);
 }
 
 const [pic, gt, challenge, c_, s_] = ['pictures/gt/7bfaaa72b/slice/33d904bd6.png', 'c0084ad0567738668c18a81b2e9ca4cd', 'd32929b58a7938c54bb616b48def4bc2', [12, 58, 98, 36, 43, 95, 62, 15, 12], '546f4b64']
 
-console.log(get_w('100_100', '', pic, c_, s_, gt, challenge))
+console.log(get_w('100_100', pic, c_, s_, gt, challenge))

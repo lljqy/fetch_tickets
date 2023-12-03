@@ -3,6 +3,7 @@ import json
 from urllib.parse import urljoin
 from typing import Tuple, Dict, List
 
+import execjs
 import requests
 from fake_useragent import UserAgent
 
@@ -67,7 +68,7 @@ class Geetest:
         }
         requests.get("https://api.geevisit.com/ajax.php", params=params_2_3, headers=self._headers)
 
-    def _get_pic_and_text(self, gt: str, challenge: str) -> Tuple[str, List[int], str]:
+    def _get_pic_and_text(self, gt: str, challenge: str) -> Tuple[str, List[int], str, str]:
         params = {
             "is_next": "true",
             "type": "click",
@@ -89,8 +90,8 @@ class Geetest:
         # 点选模块的数据需要取里面的'data'对象
         if data.get('data', dict()):
             data = data.get('data')
-            return data.get('pic'), data.get('c'), data.get('s')
-        return data.get('slice'), data.get('c'), data.get('s')
+            return data.get('pic'), data.get('c'), data.get('s'), data.get('sign')
+        return data.get('slice'), data.get('c'), data.get('s'), ''
 
 
     def _generate_positions(self, pic: str) -> str:
@@ -101,7 +102,9 @@ class Geetest:
     def _generate_w(self, pic: str, gt: str, challenge: str, c: List[int], s: str) -> str:
         positions = self._generate_positions(pic)
         # todo 逆向生成w参数的过程
-        return ''
+        with open('./js/click.js', 'r') as f:
+            js = execjs.compile(f.read())
+        return js.call('get_w', positions, pic, c, s, gt, challenge)
 
     def _get_validate_code(self, pic: str, gt: str, challenge: str, c: List[int], s: str) -> str:
         w = self._generate_w(pic, gt, challenge, c, s)
@@ -135,7 +138,7 @@ class Geetest:
         # 2. 初始化请求
         self._pre_request(gt, challenge)
         # 3. 访问get.php获取图片和文字信息，获取pic, c, s这三个参数
-        pic, c, s = self._get_pic_and_text(gt, challenge)
+        pic, c, s, text = self._get_pic_and_text(gt, challenge)
         # 4. 用第3步中的pic, c, s三个参数生成w参数，然后配合gt和challenge参数请求ajax.php获取validate参数
         validate_code = self._get_validate_code(pic, gt, challenge, c, s)
         # 5. 拿着validate参数生成accessToken参数
