@@ -33,6 +33,7 @@ Django REST framework是一个基于Django的强大RESTful API框架。它使创
 
 class APIView(View): 
     # 封装了view,并且重新封装了request,初始化了各种组件
+     提供了免除csrf认证，版本处理、认证、权限、节流、解析器、筛选器、分页、序列化、渲染器
 
 class GenericAPIView(views.APIView):
     # 增加了一些属性和方法,如get_queryset,get_serializer
