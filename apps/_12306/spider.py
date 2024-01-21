@@ -4,6 +4,7 @@ from typing import Dict
 from pathlib import Path
 from datetime import datetime
 
+from itertools import zip_longest
 from dateutil.parser import parse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
@@ -192,51 +193,45 @@ class TicketProcessor(BaseProcessor):
         self._pre_book(int(self._conf.get('order_item.order')))
         time_print("成功选择订票车次")
 
-    def _ensure_passengers(self) -> None:
+    def _ensure_passengers_and_ticket_type_and_seat_type(self) -> None:
         time_print("开始选择乘客")
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
         select_passengers = re.split(self.SEP_PATTERN, self._conf.get("user_info.users"))
-        for passenger_label in passenger_labels:
-            if any(passenger_label.text.startswith(p) for p in select_passengers):
-                passenger_label.click()
-                retry_times = 0
-                # 学生票需要点击确认按钮
-                while self._conf.get("ticket_info.ticket_type") == "学生票":
-                    try:
-                        confirm_student = ec.visibility_of_element_located((By.ID, "dialog_xsertcj_ok"))
-                        if confirm_student(self._driver):
-                            confirm_student(self._driver).click()
-                        break
-                    except NoSuchElementException as _:
-                        if retry_times > 100:
+        ticket_types = re.split(self.SEP_PATTERN, self._conf.get("ticket_info.ticket_type"))
+        seat_types = re.split(self.SEP_PATTERN, self._conf.get("confirm_info.seat_type"))
+        student_suffix = "(学生)"
+        for index, (passenger_name, ticket_type, seat_type) in enumerate(
+                zip_longest(select_passengers, ticket_types, seat_types), start=1):
+            if not passenger_name:
+                continue
+            ticket_type = ticket_type if ticket_type else "成人票"
+            for passenger_label in passenger_labels:
+                select_passenger_name = passenger_label.text
+                if select_passenger_name.endswith(student_suffix):
+                    select_passenger_name = select_passenger_name.replace(student_suffix, '')
+                if select_passenger_name == passenger_name:
+                    passenger_label.click()
+                    # 消除系统弹出来的学生框模态
+                    retry_times = 0
+                    while retry_times <= 1000 and passenger_label.text.endswith(student_suffix):
+                        try:
+                            confirm_student = ec.visibility_of_element_located((By.ID, "dialog_xsertcj_ok"))
+                            if confirm_student(self._driver):
+                                confirm_student(self._driver).click()
                             break
-                        retry_times += 1
+                        except NoSuchElementException as _:
+                            retry_times += 1
+                    # 选择票种
+                    Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='ticketType_{index}']")
+                           ).select_by_value(TICKET_MAP.get(ticket_type))
+                    # 选择系别
+                    if seat_type:
+                        Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='seatType_{index}']")
+                               ).select_by_value(SEAT_MAP.get(seat_type))
+                    break
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
         self.compatible(By.ID, "qd_closeDefaultWarningWindowDialog_id")
         time_print("成功选择乘客")
-
-    def _ensure_ticket_type(self) -> None:
-        time_print("开始选择票种")
-        ticket_type = self._conf.get("ticket_info.ticket_type")
-        if ticket_type:
-            tickets = self._driver.find_elements(by=By.XPATH, value="//select[starts-with(@id,'ticketType')]")
-            for ticket in tickets:
-                ticket_type_dropdown = Select(ticket)
-                ticket_type_dropdown.select_by_value(TICKET_MAP.get(ticket_type))
-        time_print("票种选择成功")
-
-    def _ensure_seat_type(self) -> None:
-        time_print("开始选择席别")
-        seat_type = self._conf.get("confirm_info.seat_type")
-        if seat_type:
-            seats = self._driver.find_elements(by=By.XPATH, value="//select[starts-with(@id,'seatType')]")
-            for seat in seats:
-                seat_type_dropdown = Select(seat)
-                try:
-                    seat_type_dropdown.select_by_value(SEAT_MAP.get(seat_type))
-                except NoSuchElementException as _:
-                    continue
-        time_print("成功选择席别")
 
     def _ensure_seat_position(self) -> None:
 
@@ -271,9 +266,7 @@ class TicketProcessor(BaseProcessor):
         time.sleep(self.BIG_INTERVAL)
 
     def _ensure(self) -> None:
-        self._ensure_passengers()
-        self._ensure_ticket_type()
-        self._ensure_seat_type()
+        self._ensure_passengers_and_ticket_type_and_seat_type()
         self._ensure_seat_position()
 
     def run(self, debug: bool = False) -> None:
