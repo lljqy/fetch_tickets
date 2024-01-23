@@ -193,6 +193,14 @@ class TicketProcessor(BaseProcessor):
         self._pre_book(int(self._conf.get('order_item.order')))
         time_print("成功选择订票车次")
 
+    def _select_by_name(self, xpath: str, name: str, map_relation: Dict[str, str]) -> bool:
+        select_ = Select(self._driver.find_element(by=By.XPATH, value=xpath))
+        for option in select_.options:
+            if option.text.startswith(name):
+                select_.select_by_value(map_relation.get(name))
+                return True
+        return False
+
     def _ensure_passengers_and_ticket_type_and_seat_type(self) -> None:
         time_print("开始选择乘客")
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
@@ -222,12 +230,10 @@ class TicketProcessor(BaseProcessor):
                         except NoSuchElementException as _:
                             retry_times += 1
                     # 选择票种
-                    Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='ticketType_{index}']")
-                           ).select_by_value(TICKET_MAP.get(ticket_type))
+                    self._select_by_name(f"//select[@id='ticketType_{index}']", ticket_type, TICKET_MAP)
                     # 选择系别
                     if seat_type:
-                        Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='seatType_{index}']")
-                               ).select_by_value(SEAT_MAP.get(seat_type))
+                        self._select_by_name(f"//select[@id='seatType_{index}']", seat_type, SEAT_MAP)
                     break
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
         self.compatible(By.ID, "qd_closeDefaultWarningWindowDialog_id")
