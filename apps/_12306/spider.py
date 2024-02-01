@@ -3,8 +3,8 @@ import time
 from typing import Dict
 from pathlib import Path
 from datetime import datetime
-
 from itertools import zip_longest
+
 from dateutil.parser import parse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
@@ -193,6 +193,16 @@ class TicketProcessor(BaseProcessor):
         self._pre_book(int(self._conf.get('order_item.order')))
         time_print("成功选择订票车次")
 
+    def _choose_select(self, xpath: str, name: str, mapping: Dict[str, str]) -> None:
+        value = mapping.get(name)
+        if not value:
+            return
+        select_element = Select(self._driver.find_element(by=By.XPATH, value=xpath))
+        for option in select_element.options:
+            if option.get_attribute('value') == value:
+                option.click()
+                return
+
     def _ensure_passengers_and_ticket_type_and_seat_type(self) -> None:
         time_print("开始选择乘客")
         passenger_labels = self._driver.find_elements(by=By.XPATH, value=self.PASSENGER_PATTERN)
@@ -222,12 +232,10 @@ class TicketProcessor(BaseProcessor):
                         except NoSuchElementException as _:
                             retry_times += 1
                     # 选择票种
-                    Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='ticketType_{index}']")
-                           ).select_by_value(TICKET_MAP.get(ticket_type))
+                    self._choose_select(f"//select[@id='ticketType_{index}']", ticket_type, TICKET_MAP)
                     # 选择系别
                     if seat_type:
-                        Select(self._driver.find_element(by=By.XPATH, value=f"//select[@id='seatType_{index}']")
-                               ).select_by_value(SEAT_MAP.get(seat_type))
+                        self._choose_select(f"//select[@id='seatType_{index}']", seat_type, SEAT_MAP)
                     break
         # 判断手机号绑定验证“qd_closeDefaultWarningWindowDialog_id”
         self.compatible(By.ID, "qd_closeDefaultWarningWindowDialog_id")
