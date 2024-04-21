@@ -3,6 +3,7 @@ import time
 import base64
 from pathlib import Path
 from http import cookiejar
+from operator import itemgetter
 
 import requests
 import pandas as pd
@@ -37,7 +38,7 @@ class QuickSpider:
         self._session.cookies = cookiejar.MozillaCookieJar(filename=str(cookie_file_path.absolute()))
 
     def _save_cookies(self) -> None:
-        self._session.save(ignore_discard=True, ignore_expires=True)
+        self._session.cookies.save(ignore_discard=True, ignore_expires=True)
 
     def _load_cookies(self) -> None:
         cookies_dir = Path(BASE_DIR) / "apps" / "_12306" / "preserve"
@@ -98,7 +99,7 @@ class QuickSpider:
         self._session.get(url=urljoin(self._base_url, "otn/login/userLogin"), headers=headers, verify=False)
         self._session.get(url=urljoin(self._base_url, "otn/passport?redirect=/otn/login/userLogin"), headers=headers,
                           verify=False)
-        self._session.cookies.set("uamtk", response.json().get("uamtk"))
+        requests.utils.add_dict_to_cookiejar(self._session.cookies, cookie_dict={"uamtk": response.json().get("uamtk")})
         # {
         # 	"apptk": null,
         # 	"result_message": "验证通过",
@@ -189,16 +190,18 @@ class QuickSpider:
             raise ValueError(f"‘出发地’({from_})或者‘目的地’({to})有误")
         params = {
             "leftTicketDTO.train_date": start_date,
-            "leftTicketDTO.from_station": SEAT_MAP.get(from_),
-            "leftTicketDTO.to_station": SEAT_MAP.get(to),
+            "leftTicketDTO.from_station": SITE_MAP.get(from_),
+            "leftTicketDTO.to_station": SITE_MAP.get(to),
             "purpose_codes": purpose_code,
         }
         response = self._session.get(
             url=urljoin(self._base_url, "otn/leftTicket/queryG"),
             params=params,
-            headers=headers)
+            headers=headers,
+            verify=False
+        )
         r = response.json()
-        if r != requests.status_codes.codes.ok:
+        if r.get("httpstatus") != requests.status_codes.codes.ok:
             raise RuntimeError("无法查询车次信息")
         results = r.get("data", dict()).get("result", list())
         columns = [
@@ -212,7 +215,7 @@ class QuickSpider:
             "to_station_telecode",
             "start_time",
             "arrive_time",
-            "time_consuming"
+            "time_consuming",
             "can_web_by",
             "yp_info",
             "start_train_date",
@@ -249,11 +252,10 @@ class QuickSpider:
             "local_start_time",
             "bed_level_info",
             "seat_discount_info",
-            "sale_time",
-            "from_station_name",
-            "to_station_name",
+            "sale_time"
         ]
-        data = [result.split("|") for result in results]
+        filter_data_rule = itemgetter(*[*list(range(40)), 46, *list(range(48, 52)), *list(range(53, 56))])
+        data = [filter_data_rule(result.split("|")) for result in results]
         df = pd.DataFrame(data=data, columns=columns)
         df["from_station_name"] = df["from_station_telecode"].map(SITE_MAP_REVERSE)
         df["to_station_name"] = df["to_station_telecode"].map(SITE_MAP_REVERSE)
@@ -527,6 +529,15 @@ class QuickSpider:
             return "@" + base64.b64encode(byte_array).decode("utf-8")
         return "@" + "".join(map(lambda x: chr(x), out_array))
 
+    def is_cookie_alive(self, headers: dict[str, str]) -> bool:
+        response = self._session.post(
+            url=urljoin(self._base_url, "otn/index/initMy12306Api"), headers=headers, verify=False)
+        try:
+            result = response.json()
+        except requests.exceptions.JSONDecodeError as _:
+            result = dict()
+        return result.get("data", dict()).get("_is_active", "N") == "Y"
+
     @property
     def headers(self) -> dict[str, str]:
         return {
@@ -548,7 +559,59 @@ class QuickSpider:
 
     def run(self):
         headers = self.headers
-        self._login("", "", "", headers)
+        if not self.is_cookie_alive(headers):
+            self._login("13763113873", "l199209300905", "5917", headers)
         df_train_infos = self._query_left_tickets("深圳北", "武汉", "2024-04-26", headers)
         self._choose_train(headers, df_train_infos.to_dict(orient="records")[0])
         self._submit(headers)
+
+
+if __name__ == '__main__':
+    import requests
+
+    cookies = {
+        '_uab_collina': '169349879123824753028375',
+        'JSESSIONID': 'B6DA34D143B9A992AFA45A22D95B09ED',
+        'tk': '2w3_9SKT3rRnT5optjoYFRG1DiEhkAcQgFdgVQdql1l0',
+        '_jc_save_wfdc_flag': 'dc',
+        'guidesStatus': 'off',
+        'highContrastMode': 'defaltMode',
+        'cursorStatus': 'off',
+        '_jc_save_fromStation': '%u6DF1%u5733%u5317%2CIOQ',
+        '_jc_save_toStation': '%u6B66%u6C49%2CWHN',
+        'BIGipServerpassport': '988283146.50215.0000',
+        'route': '495c805987d0f5c8c84b14f60212447d',
+        'BIGipServerotn': '1189609738.24610.0000',
+        '_jc_save_fromDate': '2024-04-22',
+        '_jc_save_showIns': 'true',
+        'uKey': 'da790401f04d6bc2320f0d674699927964808470ac1480e4525cbae9aa613fbb',
+        '_jc_save_toDate': '2024-04-22',
+    }
+
+    headers = {
+        'Host': 'kyfw.12306.cn',
+        'Cache-Control': 'no-cache',
+        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'X-Requested-With': 'XMLHttpRequest',
+        'If-Modified-Since': '0',
+        'sec-ch-ua-platform': '"Windows"',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Dest': 'empty',
+        'Referer': 'https://kyfw.12306.cn/otn/leftTicket/init?linktypeid=dc',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        # 'Cookie': '_uab_collina=169349879123824753028375; JSESSIONID=B6DA34D143B9A992AFA45A22D95B09ED; tk=2w3_9SKT3rRnT5optjoYFRG1DiEhkAcQgFdgVQdql1l0; _jc_save_wfdc_flag=dc; guidesStatus=off; highContrastMode=defaltMode; cursorStatus=off; _jc_save_fromStation=%u6DF1%u5733%u5317%2CIOQ; _jc_save_toStation=%u6B66%u6C49%2CWHN; BIGipServerpassport=988283146.50215.0000; route=495c805987d0f5c8c84b14f60212447d; BIGipServerotn=1189609738.24610.0000; _jc_save_fromDate=2024-04-22; _jc_save_showIns=true; uKey=da790401f04d6bc2320f0d674699927964808470ac1480e4525cbae9aa613fbb; _jc_save_toDate=2024-04-22',
+    }
+
+    params = {
+        'leftTicketDTO.train_date': '2024-04-22',
+        'leftTicketDTO.from_station': 'IOQ',
+        'leftTicketDTO.to_station': 'WHN',
+        'purpose_codes': 'ADULT',
+    }
+
+    response = requests.get('https://kyfw.12306.cn/otn/leftTicket/queryG', params=params, cookies=cookies,
+                            headers=headers)
