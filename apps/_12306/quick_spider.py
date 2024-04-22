@@ -1,17 +1,21 @@
 import re
+import json
 import time
+import pytz
 import base64
+import urllib
 from pathlib import Path
-from http import cookiejar
+from datetime import datetime
 from operator import itemgetter
 
 import requests
 import pandas as pd
+from retry import retry
 from urllib.parse import urljoin
 from fake_useragent import UserAgent
+from requests.cookies import RequestsCookieJar
 
 from utils.common import BASE_DIR, time_print
-from core.base_processor import BaseCrawlPackageProcessor
 from .constants import TRAIN_TYPE_MAP, TICKET_MAP, SEAT_MAP, TIME_RANGE_MAP, DEFAULTS_CONF, REQUIRES, DEFAULT_VALUE, \
     SITE_MAP
 
@@ -19,38 +23,60 @@ UINT8_BLOCK = 16
 SITE_MAP_REVERSE = {site_en_name: site_cn_name for site_cn_name, site_en_name in SITE_MAP.items()}
 
 
+class Session(requests.Session):
+
+    @retry(tries=3, delay=5)
+    def get(self, url: str, **kwargs):
+        self.cookies.update(self.headers)
+        response = super().get(url, **kwargs)
+        cookies_dict = response.cookies.get_dict()
+        if cookies_dict:
+            self.cookies.update(cookies_dict)
+        return response
+
+    @retry(tries=3, delay=5)
+    def post(self, url: str, **kwargs):
+        self.cookies.update(self.headers)
+        response = super().post(url, **kwargs)
+        cookies_dict = response.cookies.get_dict()
+        if cookies_dict:
+            self.cookies.update(cookies_dict)
+        return response
+
+
 class QuickSpider:
+    _SUCCESS = 0
+    _FAIL = 1
 
     def __init__(self) -> None:
         self._base_url = "https://kyfw.12306.cn"
-        self._session = requests.Session()
-        self._init_cookies()
-        try:
-            self._load_cookies()
-        except cookiejar.LoadError as _:
-            ...
+        self._session = Session()
+        self._load_cookies()
 
-    def _init_cookies(self) -> None:
+    def _save_cookies(self) -> None:
+        cookies = requests.utils.dict_from_cookiejar(self._session.cookies)
         cookies_dir = Path(BASE_DIR) / "apps" / "_12306" / "preserve"
         cookies_dir.mkdir(exist_ok=True)
         cookie_file_path = cookies_dir / "cookies.txt"
-        cookie_file_path.touch(exist_ok=True)
-        self._session.cookies = cookiejar.MozillaCookieJar(filename=str(cookie_file_path.absolute()))
-
-    def _save_cookies(self) -> None:
-        self._session.cookies.save(ignore_discard=True, ignore_expires=True)
+        with open(cookie_file_path, "w") as f:
+            json.dump(cookies, f)
 
     def _load_cookies(self) -> None:
         cookies_dir = Path(BASE_DIR) / "apps" / "_12306" / "preserve"
         cookies_dir.mkdir(exist_ok=True)
         cookie_file_path = cookies_dir / "cookies.txt"
-        cookie_file_path.touch(exist_ok=True)
-        load_cookiejar = cookiejar.MozillaCookieJar()
-        load_cookiejar.load(str(cookie_file_path.absolute()), ignore_discard=True, ignore_expires=True)
-        load_cookies = requests.utils.dict_from_cookiejar(load_cookiejar)
-        cookies = requests.utils.cookiejar_from_dict(load_cookies)
-        # 只需将读取出的cookies赋值给session.cookies，即可在后续的请求中带上之前保存的cookies啦
-        self._session.cookies = cookies
+        if not cookie_file_path.exists():
+            cookie_file_path.touch(exist_ok=True)
+            return
+        jar = RequestsCookieJar()
+        try:
+            with open(cookie_file_path, "r") as f:
+                cookies = json.load(f)
+                for name, value in cookies.items():
+                    jar.set(name, value)
+            self._session.cookies = jar
+        except json.decoder.JSONDecodeError as _:
+            time_print("cookie文件有误，重新登陆获取cookie")
 
     def _get_sms_code(self, user_name: str, cast_num: str, headers: dict[str, str]) -> str:
         """
@@ -77,25 +103,30 @@ class QuickSpider:
         self._check(user_name, headers)
         # 1. 获取验证码
         sms_code = self._get_sms_code(user_name, cast_num, headers)
-        # 2. 登录获取cookie
-        data = {
-            'sessionId': '',
-            'sig': '',
-            'if_check_slide_passcode_token': '',
-            'scene': '',
-            'checkMode': '0',
-            'randCode': sms_code,
-            'username': user_name,
-            'password': self.encrypt_password(password),
-            'appid': 'otn',
-        }
         # {
         # 	"result_message": "登录成功",
         # 	"uamtk": "cCuKQKnUcxB37xtQzk5Ws6Gh8EFVxuzJ5HLe-Qozl1l0",
         # 	"result_code": 0
         # }
-        response = self._session.post(url=urljoin(self._base_url, "passport/web/login"), headers=headers, data=data,
-                                      verify=False)
+        while True:
+            # 2. 登录获取cookie
+            data = {
+                'sessionId': '',
+                'sig': '',
+                'if_check_slide_passcode_token': '',
+                'scene': '',
+                'checkMode': '0',
+                'randCode': sms_code,
+                'username': user_name,
+                'password': self.encrypt_password(password),
+                'appid': 'otn',
+            }
+            response = self._session.post(url=urljoin(self._base_url, "passport/web/login"), headers=headers, data=data,
+                                          verify=False)
+            if response.json().get("result_code") != self._SUCCESS:
+                sms_code = input("请输入手机验证码")
+            else:
+                break
         self._session.get(url=urljoin(self._base_url, "otn/login/userLogin"), headers=headers, verify=False)
         self._session.get(url=urljoin(self._base_url, "otn/passport?redirect=/otn/login/userLogin"), headers=headers,
                           verify=False)
@@ -259,35 +290,35 @@ class QuickSpider:
         df = pd.DataFrame(data=data, columns=columns)
         df["from_station_name"] = df["from_station_telecode"].map(SITE_MAP_REVERSE)
         df["to_station_name"] = df["to_station_telecode"].map(SITE_MAP_REVERSE)
-        return df
+        return df[df["can_web_by"] == "Y"]
 
-    def _choose_train(self, headers: dict[str, str], train_info: dict[str, str]) -> None:
+    def _choose_train(self, headers: dict[str, str], from_: str, to: str, train_info: dict[str, str]) -> None:
         # 检查用户信息
         self._session.post(urljoin(self._base_url, "otn/login/checkUser"), headers=headers, data={'_json_att': ''})
         # 选择车次对应页面提交预订按钮
-        data = 'secretStr=sh4HUuBB1zEjlWbTXqkp5HtzkLW37QzFJWFBJ0u5XQYxguYi2NJ8Re3WXxI06oAXgYrXx%2BQ4xN9D%0AQXINKWISm6qyw7lAk0Uvth3nCT6RZEFu0KM6nZB4KlOm%2FgjYNesNwqZ24KXUFmOnHbOcfq1ZZrwj%0Ah5aTEunyG1luS3w%2FJJdZoidBJ2Wh98POGQrVcxt0saxBbl6wuNQfiZqH9ADYwaFO0kG3oIED8mTO%0AXISl1mh5BKtnMaAWvCxiHAGGsr8CsMtRjIzZl%2FcLfnwFtvAganpmofLdpojDZNZyxWuQuZcUPlSD%0An62XyXVvpyuVPwGlzINWZUPAkvGpdVmIOBfJnBtR4t5D5sjP&train_date=2024-04-22&back_train_date=2024-04-21&tour_flag=dc&purpose_codes=ADULT&query_from_station_name=深圳北&query_to_station_name=武汉&bed_level_info=33025453102725320263543047354104945&seat_discount_info=&undefined'.encode()
+        date_fmt = "%Y-%m-%d"
+        params = {
+            "secretStr": train_info.get("secret_str"),
+            "train_date": pd.to_datetime(train_info.get("start_train_date")).strftime(date_fmt),
+            "back_train_date": datetime.now().strftime(date_fmt),
+            "tour_flag": "dc",
+            "purpose_codes": train_info.get("purpose_codes"),
+            "query_from_station_name": from_,
+            "query_to_station_name": to,
+            "bed_level_info": train_info.get("bed_level_info"),
+            "seat_discount_info": ""
+        }
+        data = self._params_to_query_data(params) + "&undefined"
         self._session.post(urljoin(self._base_url, "otn/leftTicket/submitOrderRequest"), headers=headers, data=data)
 
-    def _get_passengers(self, headers: dict[str, str]) -> list[dict[str, str]]:
+    def _submit(self, start_date: str, headers: dict[str, str], train_info: dict[str, str]) -> None:
         response = self._session.post(urljoin(self._base_url, "otn/confirmPassenger/initDc"), headers=headers,
-                                      data={'_json_att': ''})
-        token = re.search(r"var globalRepeatSubmitToken\s=\s\'(\w+)\'", response.text).group(1)
-        data = {
-            '_json_att': '',
-            'REPEAT_SUBMIT_TOKEN': token,
-        }
-        response = self._session.post(
-            urljoin(self._base_url, "otn/confirmPassenger/getPassengerDTOs"),
-            headers=headers,
-            data=data,
-        )
-        result = response.json()
-        return result.get("data", dict()).get("normal_passengers", list())
-
-    def _submit(self, headers: dict[str, str]) -> None:
-        response = self._session.post(urljoin(self._base_url, "otn/confirmPassenger/initDc"), headers=headers,
-                                      data={'_json_att': ''})
-        token = re.search(r"var globalRepeatSubmitToken\s=\s\'(\w+)\'", response.text).group(1)
+                                      data={"_json_att": ""})
+        token_result = re.search(r"var globalRepeatSubmitToken\s=\s\'(\w+)\'", response.text)
+        if not token_result:
+            time_print("未通过乘客初始信息校验")
+            return
+        token = token_result.group(1)
         data = {
             '_json_att': '',
             'REPEAT_SUBMIT_TOKEN': token,
@@ -298,12 +329,58 @@ class QuickSpider:
             data=data,
         )
         passengers = response.json().get("data", dict()).get("normal_passengers", list())
+        selected_passengers = ["吴炀"]
+        cur_passengers = [
+            passenger for passenger in passengers if passenger.get("passenger_name") in selected_passengers]
+        sep = ","
+        seat_type, ticket_type = "二等座", "成人票"
+        params = {
+            "cancel_flag": "2",
+            "bed_level_order_num": "000000000000000000000000000000",
+            # 座位类型,0,车票类型,姓名,1,身份证号,电话号码,N,乘客字典元素中的allEncStr(多个乘客的话用‘,’隔开)
+            "passengerTicketStr": urllib.parse.quote(
+                sep.join([sep.join((SEAT_MAP.get(seat_type), "0", TICKET_MAP.get(ticket_type),
+                                    cur_passenger.get("passenger_name"), "1",
+                                    cur_passenger.get("passenger_id_no"),
+                                    cur_passenger.get("mobile_no"), cur_passenger.get("allEncStr")))
+                          for cur_passenger in cur_passengers])),
+            "oldPassengerStr": urllib.parse.quote(sep.join([sep.join((cur_passenger.get("passenger_name"),
+                                                                      cur_passenger.get("passenger_id_type_code"),
+                                                                      cur_passenger.get("passenger_id_no"),
+                                                                      cur_passenger.get("passenger_type") + "_")) for
+                                                            cur_passenger in cur_passengers])),
+            "tour_flag": "dc",
+            "whatsSelect": "1",
+            "sessionId": "",
+            "sig": "",
+            "scene": "nc_login",
+            "_json_att": "",
+            "REPEAT_SUBMIT_TOKEN": token
 
-        data = 'cancel_flag=2&bed_level_order_num=000000000000000000000000000000&passengerTicketStr=M%2C0%2C1%2C%E5%90%B4%E7%82%80%2C1%2C4409***********112%2C158****1159%2CN%2Cfd0c5e0f2da3aff2d2804eadc99622c3371d5248e9a29e8d29d93bb5d17579daec372b0a3937f533daa808a12c14af3972694f9b735758b33d1845bb0797b64b812b20e9abcb7b8b2f8243ad2b4b3615&oldPassengerStr=%E5%90%B4%E7%82%80%2C1%2C4409***********112%2C1_&tour_flag=dc&whatsSelect=1&sessionId=&sig=&scene=nc_login&_json_att=&REPEAT_SUBMIT_TOKEN=f8c2bddedb919f67c693600053b181dc'
-        response = self._session.post(urljoin(self._base_url, "otn/confirmPassenger/checkOrderInfo"), headers=headers,
-                                      data=data)
-
-        data = 'train_date=Mon+Apr+22+2024+00%3A00%3A00+GMT%2B0800+(%E4%B8%AD%E5%9B%BD%E6%A0%87%E5%87%86%E6%97%B6%E9%97%B4)&train_no=6i000G119203&stationTrainCode=G1192&seatType=M&fromStationTelecode=IOQ&toStationTelecode=WHN&leftTicket=TV6WggpPZoyKnkpUvFgKWYANONqXMN5MKtf04aygzT%252FR8Cik&purpose_codes=00&train_location=Q6&_json_att=&REPEAT_SUBMIT_TOKEN=f8c2bddedb919f67c693600053b181dc'
+        }
+        data = self._params_to_query_data(params)
+        response = self._session.post(
+            urljoin(self._base_url, "otn/confirmPassenger/checkOrderInfo"),
+            headers=headers,
+            data=data)
+        if response.json().get("httpstatus") != requests.status_codes.codes.ok:
+            time_print(f"{sep.join(selected_passengers)}中有乘客信息不正确")
+            return
+        gmt_format = '%a %b %d %Y %H:%M:%S GMT 0800 (中国标准时间)'
+        params = {
+            'train_date': pd.to_datetime(start_date).strftime(gmt_format),  # Fri Nov 24 2017 00:00:00 GMT+0800 (中国标准时间)
+            'train_no': train_info.get("train_no"),
+            'stationTrainCode': train_info.get("stationTrainCode"),  # G312
+            'seatType': seat_type,  # 席别
+            'fromStationTelecode': train_info.get("from_station"),  # one_train[6]
+            'toStationTelecode': train_info.get("to_station"),  # ? one_train[7]
+            'leftTicket': train_info.get("leftTicket"),  # one_train[12]
+            'purpose_codes': '00',
+            'train_location': train_info.get("train_location"),  # one_train[15]
+            '_json_att': "",
+            'REPEAT_SUBMIT_TOKEN': token  # 1.1.19获取
+        }
+        data = urllib.parse.urlencode(params)
         response = self._session.post(urljoin(self._base_url, "otn/confirmPassenger/getQueueCount"), headers=headers,
                                       data=data)
 
@@ -368,6 +445,10 @@ class QuickSpider:
         )
         if response.json().get("data", dict()).get("submitStatus"):
             time_print("抢票成功")
+
+    @staticmethod
+    def _params_to_query_data(params: dict[str, str]) -> str:
+        return "&".join([f"{k}={v}" for k, v in params.items()])
 
     @staticmethod
     def _unsigned_right_shift(num: int, shift: int) -> int:
@@ -531,12 +612,12 @@ class QuickSpider:
 
     def is_cookie_alive(self, headers: dict[str, str]) -> bool:
         response = self._session.post(
-            url=urljoin(self._base_url, "otn/index/initMy12306Api"), headers=headers, verify=False)
-        try:
-            result = response.json()
-        except requests.exceptions.JSONDecodeError as _:
-            result = dict()
-        return result.get("data", dict()).get("_is_active", "N") == "Y"
+            url=urljoin(self._base_url, "passport/web/auth/uamtk"),
+            headers=headers,
+            verify=False,
+            data={'appid': 'otn'}
+        )
+        return response.json().get("result_message") == "验证通过"
 
     @property
     def headers(self) -> dict[str, str]:
@@ -558,60 +639,16 @@ class QuickSpider:
         }
 
     def run(self):
+        from_, to, start_date = "深圳北", "武汉", "2024-05-01"
         headers = self.headers
         if not self.is_cookie_alive(headers):
             self._login("13763113873", "l199209300905", "5917", headers)
-        df_train_infos = self._query_left_tickets("深圳北", "武汉", "2024-04-26", headers)
-        self._choose_train(headers, df_train_infos.to_dict(orient="records")[0])
-        self._submit(headers)
+        df_train_infos = self._query_left_tickets(from_, to, start_date, headers)
+        for item in df_train_infos.itertuples():
+            train_info = item._asdict()
+            self._choose_train(headers, from_, to, train_info)
+            self._submit(start_date, headers, train_info)
 
 
 if __name__ == '__main__':
-    import requests
-
-    cookies = {
-        '_uab_collina': '169349879123824753028375',
-        'JSESSIONID': 'B6DA34D143B9A992AFA45A22D95B09ED',
-        'tk': '2w3_9SKT3rRnT5optjoYFRG1DiEhkAcQgFdgVQdql1l0',
-        '_jc_save_wfdc_flag': 'dc',
-        'guidesStatus': 'off',
-        'highContrastMode': 'defaltMode',
-        'cursorStatus': 'off',
-        '_jc_save_fromStation': '%u6DF1%u5733%u5317%2CIOQ',
-        '_jc_save_toStation': '%u6B66%u6C49%2CWHN',
-        'BIGipServerpassport': '988283146.50215.0000',
-        'route': '495c805987d0f5c8c84b14f60212447d',
-        'BIGipServerotn': '1189609738.24610.0000',
-        '_jc_save_fromDate': '2024-04-22',
-        '_jc_save_showIns': 'true',
-        'uKey': 'da790401f04d6bc2320f0d674699927964808470ac1480e4525cbae9aa613fbb',
-        '_jc_save_toDate': '2024-04-22',
-    }
-
-    headers = {
-        'Host': 'kyfw.12306.cn',
-        'Cache-Control': 'no-cache',
-        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'X-Requested-With': 'XMLHttpRequest',
-        'If-Modified-Since': '0',
-        'sec-ch-ua-platform': '"Windows"',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Dest': 'empty',
-        'Referer': 'https://kyfw.12306.cn/otn/leftTicket/init?linktypeid=dc',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        # 'Cookie': '_uab_collina=169349879123824753028375; JSESSIONID=B6DA34D143B9A992AFA45A22D95B09ED; tk=2w3_9SKT3rRnT5optjoYFRG1DiEhkAcQgFdgVQdql1l0; _jc_save_wfdc_flag=dc; guidesStatus=off; highContrastMode=defaltMode; cursorStatus=off; _jc_save_fromStation=%u6DF1%u5733%u5317%2CIOQ; _jc_save_toStation=%u6B66%u6C49%2CWHN; BIGipServerpassport=988283146.50215.0000; route=495c805987d0f5c8c84b14f60212447d; BIGipServerotn=1189609738.24610.0000; _jc_save_fromDate=2024-04-22; _jc_save_showIns=true; uKey=da790401f04d6bc2320f0d674699927964808470ac1480e4525cbae9aa613fbb; _jc_save_toDate=2024-04-22',
-    }
-
-    params = {
-        'leftTicketDTO.train_date': '2024-04-22',
-        'leftTicketDTO.from_station': 'IOQ',
-        'leftTicketDTO.to_station': 'WHN',
-        'purpose_codes': 'ADULT',
-    }
-
-    response = requests.get('https://kyfw.12306.cn/otn/leftTicket/queryG', params=params, cookies=cookies,
-                            headers=headers)
+    pass
