@@ -16,7 +16,7 @@ from requests import utils as request_utils
 from requests.cookies import RequestsCookieJar
 
 from utils.common import BASE_DIR, time_print
-from .constants import TICKET_MAP, SEAT_MAP, SITE_MAP
+from apps._12306.constants import TICKET_MAP, SEAT_MAP, SITE_MAP
 
 UINT8_BLOCK = 16
 SITE_MAP_REVERSE = {site_en_name: site_cn_name for site_cn_name, site_en_name in SITE_MAP.items()}
@@ -26,6 +26,7 @@ class Session(requests.Session):
 
     @retry(tries=3, delay=5)
     def get(self, url: str, **kwargs):
+        kwargs.setdefault("verify", False)
         self.cookies.update(self.headers)
         response = super().get(url, **kwargs)
         cookies_dict = response.cookies.get_dict()
@@ -35,6 +36,7 @@ class Session(requests.Session):
 
     @retry(tries=3, delay=5)
     def post(self, url: str, **kwargs):
+        kwargs.setdefault("verify", False)
         self.cookies.update(self.headers)
         response = super().post(url, **kwargs)
         cookies_dict = response.cookies.get_dict()
@@ -510,8 +512,8 @@ class QuickSpider:
             data={"_json_att": ""}
         )
         token_result = re.search(r"var globalRepeatSubmitToken\s=\s\'(\w+)\'", response.text)
-        key_check_is_change_result = re.search(r"key_check_isChange:\'(\w+)\'", response.text)
-        left_ticket_str_result = re.search(r"leftTicketStr:\'(\w+)\'", response.text)
+        key_check_is_change_result = re.search(r"\'key_check_isChange\':\'(\w+)\'", response.text)
+        left_ticket_str_result = re.search(r"\'leftTicketStr\':\'([\w\%]+)\'", response.text)
         if not token_result or not key_check_is_change_result or not left_ticket_str_result:
             time_print("未通过乘客初始信息校验")
             return
