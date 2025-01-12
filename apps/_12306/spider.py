@@ -50,6 +50,30 @@ class TicketProcessor(BaseProcessor):
                 conf.__setitem__(name, value)
         return conf
 
+
+    def _login_by_qrcode(self) -> None:
+        time_print("开始登录")
+        cookies_dir = Path(BASE_DIR) / 'apps' / '_12306' / 'preserve'
+        cookies_dir.mkdir(exist_ok=True)
+        cookies_file_path = cookies_dir / 'cookies.json'
+        self._driver.get(self._conf.get('url_info.init_url'))
+        if cookies_file_path.exists():
+            self.add_cookies(str(cookies_file_path))
+        self._driver.get(self._conf.get('url_info.init_url'))
+        if not self._driver.current_url.startswith(self._conf.get('url_info.init_url')):
+            self._driver.delete_all_cookies()
+            self._driver.find_element(by=By.XPATH, value='//a[text()="扫码登录"]').click()
+            # 等待访问网页是否加载
+            WebDriverWait(timeout=self.TIME_OUT, driver=self._driver).until(
+                ec.url_to_be(self._conf.get("url_info.init_url")))
+            cookies = self._driver.get_cookies()
+            for cookie in cookies:
+                # 修改domain防止再次登录的时候报错
+                cookie.__setitem__('domain', '.12306.cn')
+                cookie.pop('sameSite', self.EMPTY)
+            self.save_cookies(cookies, str(cookies_file_path))
+        time_print("登录成功")
+
     def _login(self) -> None:
         time_print("开始登录")
         cookies_dir = Path(BASE_DIR) / 'apps' / '_12306' / 'preserve'
@@ -289,7 +313,8 @@ class TicketProcessor(BaseProcessor):
         如果最终没有到达支付页面，循环执行订票操作，直到订票成功为止
         :return:
         """
-        self._login()
+        # self._login()
+        self._login_by_qrcode()
         if debug:
             self._choose()
             self._ensure()
