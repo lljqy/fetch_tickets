@@ -9,6 +9,7 @@ from abc import abstractmethod, ABCMeta
 
 import execjs
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
@@ -32,7 +33,7 @@ class BaseProcessor(metaclass=ABCMeta):
     SEP_PATTERN = r'[,，]'
 
     def __init__(self, stealth_file_name: str = 'stealth.min.js', set_proxy: bool = False) -> None:
-        self._load_driver_path()
+        path = self._load_driver_path()
         self._conf = self._read_config()
         if set_proxy:
             self._proxies = ProxyHandler().get_latest_kdl_free_ips(limit=10,
@@ -42,7 +43,9 @@ class BaseProcessor(metaclass=ABCMeta):
             self._proxies = list()
         options = self._get_selenium_config(is_show_browser=int(self._conf.get('login.is_show_browser', 0)))
         # 设置diver参数
-        self._driver = self.DRIVER_MAP.get(self._conf.get('path_info.driver_name'))(options)
+        ser = Service()
+        ser.executable_path = path
+        self._driver = self.DRIVER_MAP.get(self._conf.get('path_info.driver_name'))(options, service=ser)
         browser = self._conf.get('path_info.driver_name', 'chrome')
         if browser == 'chrome':
             with open(Path(BASE_DIR) / 'libs' / stealth_file_name, mode='r', encoding='utf-8') as f:
@@ -53,9 +56,10 @@ class BaseProcessor(metaclass=ABCMeta):
         self._driver.maximize_window()
 
     @staticmethod
-    def _load_driver_path() -> None:
+    def _load_driver_path() -> str:
         drivers_path = str(Path(sys.argv[0]).absolute().parent / 'drivers')
         sys.path.append(drivers_path)
+        return drivers_path
 
     def _get_selenium_config(self, is_show_browser: int = 0) -> webdriver.ChromeOptions:
         # 浏览器适配对象
