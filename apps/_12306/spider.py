@@ -166,13 +166,14 @@ class TicketProcessor(BaseProcessor):
                     self._pre_start()
                     _select_time()
         cnt = 0
-        train_nos = re.split(self.SEP_PATTERN, self._conf.get("train_info.train_nos", DEFAULT_VALUE))
+        train_string =  self._conf.get("train_info.train_nos", DEFAULT_VALUE)
+        train_nos = re.split(self.SEP_PATTERN, train_string) if train_string else list()
         while self._driver.current_url == self._conf.get("url_info.ticket_url"):
             self._search()
             cnt += 1
             time_print(f"持续抢票...第{cnt}次")
             try:
-                book_items = self._driver.find_elements(by=By.XPATH, value="//a[text()='预订']")
+                book_items = self._driver.find_elements(by=By.XPATH, value="//a[text()='预订'] | //td[text()='预订']")
                 if train_nos:
                     train_text = self._driver.find_elements(
                         by=By.XPATH,
