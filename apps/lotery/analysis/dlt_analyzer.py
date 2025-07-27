@@ -63,6 +63,19 @@ class DLTAnalyzer(BaseAnalyzer):
         for rule in RuleFactory.create_dlt_rules():
             self.rule_engine.add_rule(rule)
 
+    def _get_excluded_numbers(self) -> tuple[set[int], set[int]]:
+        """获取被排除的号码"""
+        exclude_front = set()
+        exclude_back = set()
+        
+        for rule in self.rule_engine.rules:
+            if hasattr(rule, 'exclude_front'):
+                exclude_front.update(rule.exclude_front)
+            if hasattr(rule, 'exclude_back'):
+                exclude_back.update(rule.exclude_back)
+        
+        return exclude_front, exclude_back
+
     def recommend(self) -> Dict[str, List[int]]:
         """
         根据历史数据和规则生成推荐号码
@@ -74,9 +87,20 @@ class DLTAnalyzer(BaseAnalyzer):
         hot_back = hot_cold_data['hot_back']
         cold_back = hot_cold_data['cold_back']
         
-        all_front: set = set(self.get_front_range())
+        # 获取被排除的号码
+        exclude_front, exclude_back = self._get_excluded_numbers()
+        
+        # 从可用号码中排除被排除的号码
+        all_front: set = set(self.get_front_range()) - exclude_front
+        all_back: set = set(self.get_back_range()) - exclude_back
+        
+        # 更新热冷号码，排除被排除的号码
+        hot_front = [x for x in hot_front if x not in exclude_front]
+        cold_front = [x for x in cold_front if x not in exclude_front]
         warm_front: List[int] = list(all_front - set(hot_front) - set(cold_front))
-        all_back: set = set(self.get_back_range())
+        
+        hot_back = [x for x in hot_back if x not in exclude_back]
+        cold_back = [x for x in cold_back if x not in exclude_back]
         warm_back: List[int] = list(all_back - set(hot_back) - set(cold_back))
 
         for _ in range(100):  # 最多尝试100次
@@ -90,6 +114,8 @@ class DLTAnalyzer(BaseAnalyzer):
                 front += self._secrets_sample(cold_front, 1)
             while len(front) < 5:  # 大乐透前区需要5个
                 rest: List[int] = list(all_front - set(front))
+                if not rest:  # 如果没有可用号码了，跳出循环
+                    break
                 front.append(self._secrets_choice(rest))
             front.sort()
 
@@ -101,10 +127,14 @@ class DLTAnalyzer(BaseAnalyzer):
                     cold_back) > 1 or b1 not in cold_back else self._secrets_sample(warm_back, 1)[0]
                 back = [b1, b2]
             else:
-                back = self._secrets_sample(list(all_back), 2)
+                available_back = list(all_back)
+                if len(available_back) >= 2:
+                    back = self._secrets_sample(available_back, 2)
             back = list(set(back))  # 防止万一重复
             while len(back) < 2:
                 rest = list(all_back - set(back))
+                if not rest:  # 如果没有可用号码了，跳出循环
+                    break
                 back.append(self._secrets_choice(rest))
             back.sort()
 
@@ -112,7 +142,13 @@ class DLTAnalyzer(BaseAnalyzer):
             if self.rule_engine.check_all(front, back):
                 return {"front": front, "back": back}
 
-        # 如果100次都不满足，返回最后一次
+        # 如果100次都不满足，返回最后一次（但确保不包含被排除的号码）
+        if not front or not back:
+            # 如果生成失败，返回最简单的组合
+            available_front = list(all_front)[:5]
+            available_back = list(all_back)[:2]
+            return {"front": sorted(available_front), "back": sorted(available_back)}
+        
         return {"front": front, "back": back}
 
     def get_hot_front_count(self) -> int:
