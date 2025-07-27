@@ -137,3 +137,61 @@ class IncludeNumbersRule(Rule):
         front_has = all(x in front for x in self.include_front)
         back_has = all(x in back for x in self.include_back)
         return front_has and back_has
+
+
+# 双色球特有规则
+class RedBlueBalanceRule(Rule):
+    """红蓝球平衡规则"""
+
+    def __init__(self, red_high_prob: float = 0.7):
+        # 红球高概率出现，蓝球相对随机
+        self.red_high_prob = red_high_prob
+
+    def check(self, front: List[int], back: List[int]) -> bool:
+        # 检查前区是否有高概率号码（1-16区间）
+        high_prob_count = sum(1 for x in front if 1 <= x <= 16)
+        # 双色球前区6个，建议2-4个在1-16区间
+        return 2 <= high_prob_count <= 4
+
+
+class GapRule(Rule):
+    """号码间隔规则"""
+
+    def __init__(self, min_gap: int = 2, max_gap: int = 8):
+        self.min_gap = min_gap
+        self.max_gap = max_gap
+
+    def check(self, front: List[int], back: List[int]) -> bool:
+        front_sorted = sorted(front)
+        for i in range(1, len(front_sorted)):
+            gap = front_sorted[i] - front_sorted[i - 1]
+            if gap < self.min_gap or gap > self.max_gap:
+                return False
+        return True
+
+
+# 规则工厂类
+class RuleFactory:
+    """规则工厂，用于创建不同彩票类型的规则"""
+    
+    @staticmethod
+    def create_dlt_rules():
+        """创建大乐透规则"""
+        return [
+            OddEvenRule(front_odd_range=(2, 3), back_odd_count=1),
+            IntervalRule(intervals=[(1, 12), (13, 24), (25, 35)]),
+            ConsecutiveRule(max_consecutive=2),
+            SumRangeRule(front_sum_range=(70, 150), back_sum_range=(8, 18))
+        ]
+    
+    @staticmethod
+    def create_ssq_rules():
+        """创建双色球规则"""
+        return [
+            OddEvenRule(front_odd_range=(2, 4), back_odd_count=1),
+            IntervalRule(intervals=[(1, 8), (9, 16), (17, 24), (25, 33)]),
+            ConsecutiveRule(max_consecutive=3),
+            SumRangeRule(front_sum_range=(90, 180), back_sum_range=(1, 16)),
+            RedBlueBalanceRule(),
+            GapRule(min_gap=2, max_gap=8)
+        ] 

@@ -1,0 +1,133 @@
+import secrets
+from typing import List, Dict, Any
+
+import requests
+
+from core.base import BaseCrawler, BaseAnalyzer, SSQ_CONFIG
+from core.rules import RuleEngine, HotColdRule, RuleFactory
+
+
+class SSQCrawler(BaseCrawler):
+    """双色球历史数据爬虫"""
+
+    def __init__(self, url: str = SSQ_CONFIG.url):
+        super().__init__(url, SSQ_CONFIG.params)
+
+    def fetch_latest_draws(self, n: int = 10) -> List[Dict[str, Any]]:
+        """
+        获取最近n期开奖号码
+        :param n: 期数，最大30
+        :return: [{'issue': 期号, 'front': [前区号码], 'back': [后区号码]}, ...]
+        """
+        resp: requests.Response = requests.get(self.url, params=self.params, headers=self.headers, timeout=10)
+        resp.raise_for_status()
+        data: Dict[str, Any] = resp.json()
+        draws: List[Dict[str, Any]] = []
+        result_list = data.get('result', list())
+
+        for item in result_list[:n]:
+            issue: str = item.get('code', '')
+            # 子类实现具体的解析逻辑
+            front, back = self._parse_draw_result(item)
+            if self._validate_draw(front, back):
+                draws.append({'issue': issue, 'front': front, 'back': back})
+            if len(draws) >= n:
+                break
+        return draws
+
+    def _parse_draw_result(self, part: dict[str, Any]) -> tuple[List[int], List[int]]:
+        """解析双色球开奖结果"""
+        front_part, back_part = part["red"].split(','), part["blue"].split(",")  # 双色球：前区6个，后区1个
+        front: List[int] = list(map(lambda x: int(x), front_part))
+        back: List[int] = list(map(lambda x: int(x), back_part))
+        return front, back
+
+    def _validate_draw(self, front: List[int], back: List[int]) -> bool:
+        """验证双色球开奖结果"""
+        return len(front) == 6 and len(back) == 1  # 双色球：前区6个，后区1个
+
+
+class SSQAnalyzer(BaseAnalyzer):
+    """双色球号码分析与推荐"""
+
+    def __init__(self, draws: List[Dict[str, Any]]):
+        # 使用规则工厂创建双色球规则
+        rule_classes = [HotColdRule]  # HotColdRule需要特殊处理
+        super().__init__(draws, RuleEngine, rule_classes)
+        
+        # 添加双色球特有规则
+        for rule in RuleFactory.create_ssq_rules():
+            self.rule_engine.add_rule(rule)
+
+    def recommend(self) -> Dict[str, List[int]]:
+        """
+        根据历史数据和规则生成推荐号码
+        :return: {'front': [6个前区], 'back': [1个后区]}
+        """
+        hot_cold_data = self.get_hot_cold_numbers()
+        hot_front = hot_cold_data['hot_front']
+        cold_front = hot_cold_data['cold_front']
+        hot_back = hot_cold_data['hot_back']
+        cold_back = hot_cold_data['cold_back']
+        
+        all_front: set = set(self.get_front_range())
+        warm_front: List[int] = list(all_front - set(hot_front) - set(cold_front))
+        all_back: set = set(self.get_back_range())
+        warm_back: List[int] = list(all_back - set(hot_back) - set(cold_back))
+
+        for _ in range(100):  # 最多尝试100次
+            # 前区选号（双色球需要6个）
+            front: List[int] = []
+            if len(hot_front) >= 3:
+                front += self._secrets_sample(hot_front, 3)
+            if len(warm_front) >= 2:
+                front += self._secrets_sample(warm_front, 2)
+            if len(cold_front) >= 1:
+                front += self._secrets_sample(cold_front, 1)
+            while len(front) < 6:  # 双色球前区需要6个
+                rest: List[int] = list(all_front - set(front))
+                front.append(self._secrets_choice(rest))
+            front.sort()
+
+            # 后区选号（双色球只需要1个）
+            back: List[int] = []
+            if len(hot_back) > 0 and len(cold_back) > 0:
+                # 双色球后区策略：70%概率选热号，30%概率选冷号
+                if secrets.randbelow(100) < 70:
+                    back = self._secrets_sample(hot_back, 1)
+                else:
+                    back = self._secrets_sample(cold_back, 1)
+            else:
+                back = self._secrets_sample(list(all_back), 1)
+            back.sort()
+
+            # 检查所有规则
+            if self.rule_engine.check_all(front, back):
+                return {"front": front, "back": back}
+
+        # 如果100次都不满足，返回最后一次
+        return {"front": front, "back": back}
+
+    def get_hot_front_count(self) -> int:
+        return 12
+
+    def get_cold_front_count(self) -> int:
+        return 12
+
+    def get_hot_back_count(self) -> int:
+        return 8
+
+    def get_cold_back_count(self) -> int:
+        return 8
+
+    def get_front_range(self) -> range:
+        return SSQ_CONFIG.front_range
+
+    def get_back_range(self) -> range:
+        return SSQ_CONFIG.back_range
+
+    def get_front_count(self) -> int:
+        return SSQ_CONFIG.front_count
+
+    def get_back_count(self) -> int:
+        return SSQ_CONFIG.back_count 

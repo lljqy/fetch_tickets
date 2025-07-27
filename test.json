@@ -1,0 +1,631 @@
+[
+  {
+    '$match': {
+      'seller': {
+        '$in': [
+          {
+            'brand': 'Name it',
+            'vendor': 'Name it@zalandodeep',
+            'region': 'Germany'
+          }
+        ]
+      },
+      'daily_information.date': {
+        '$in': [
+          '2025-04-21',
+          '2025-04-22',
+          '2025-04-23',
+          '2025-04-24',
+          '2025-04-25',
+          '2025-04-26',
+          '2025-04-27'
+        ]
+      },
+      'categories.bestseller_category': {
+        '$in': [
+          'Backpacks',
+          'Belts',
+          'Blazers',
+          'Body tops',
+          'Bomber jackets',
+          'Boots',
+          'Cargo shorts',
+          'Cargo trousers',
+          'Chinos',
+          'Cross & Shoulder bags',
+          'Denim jackets',
+          'Garment sets',
+          'Gloves',
+          'Headwear',
+          'Jeans',
+          'Jewelry & Watches',
+          'Jumpsuits & Playsuits',
+          'Knit cardigans',
+          'Knit sweaters & pullovers',
+          'Knit vests',
+          'Leggings',
+          'Night bottoms',
+          'Night overalls',
+          'Night sets',
+          'Night tops',
+          'Nightdresses',
+          'Other accessories',
+          'Other bags',
+          'Other coats',
+          'Other dresses',
+          'Other footwear',
+          'Other jackets',
+          'Other shorts',
+          'Other tops',
+          'Other trousers',
+          'Others',
+          'Outdoor overalls',
+          'Outdoor trousers',
+          'Pencil dresses',
+          'Polo shirts',
+          'Pouches & Clutches',
+          'Puffer coats',
+          'Puffer jackets',
+          'Pumps',
+          'Robes',
+          'S/W bottoms',
+          'S/W tops',
+          'Scarves',
+          'Shirt dresses',
+          'Shirts & Blouses',
+          'Skirts',
+          'Slippers & Sandals',
+          'Smock dresses',
+          'Sneakers',
+          'Socks',
+          'Suits',
+          'Sunglasses',
+          'Sweat & Trackpants',
+          'Sweatshirts & Hoodies',
+          'Swimsuits & Swim sets',
+          'T-shirts',
+          'Tailored trousers',
+          'Tailored waistcoats',
+          'Ties & Bow ties',
+          'Tights',
+          'Tote & Shopper bags',
+          'Travel bags',
+          'Trenchcoats',
+          'Tunics',
+          'U/W bodies',
+          'U/W bottoms',
+          'U/W sets',
+          'U/W tops',
+          'Vest jackets',
+          'Wallets & SLGs'
+        ]
+      },
+      'material_max_percent': {
+        '$gte': 0
+      },
+      'color_max_percent': {
+        '$gte': 0
+      },
+      'target_groups': {
+        '$in': [
+          'Children',
+          'Men',
+          'Women',
+          'Children,Men',
+          'Children,Women',
+          'Men,Women',
+          'Children,Men,Women'
+        ]
+      }
+    }
+  },
+  {
+    '$set': {
+      'category': '$categories.bestseller_category',
+      'daily_information': {
+        '$filter': {
+          'input': '$daily_information',
+          'as': 'daily_information',
+          'cond': {
+            '$and': [
+              {
+                '$in': [
+                  '$$daily_information.date',
+                  [
+                    '2025-04-21',
+                    '2025-04-22',
+                    '2025-04-23',
+                    '2025-04-24',
+                    '2025-04-25',
+                    '2025-04-26',
+                    '2025-04-27'
+                  ]
+                ]
+              }
+            ]
+          }
+        }
+      },
+      'max_product_in': {
+        '$max': '$product_in'
+      },
+      'max_product_out': {
+        '$max': '$product_out'
+      },
+      'daily_end_date': {
+        '$cond': {
+          'if': {
+            '$gt': [
+              {
+                '$size': {
+                  '$filter': {
+                    'input': '$daily_information',
+                    'as': 'info',
+                    'cond': {
+                      '$eq': [
+                        '$$info.date',
+                        '2025-04-27'
+                      ]
+                    }
+                  }
+                }
+              },
+              0
+            ]
+          },
+          'then': '2025-04-27',
+          'else': None
+        }
+      }
+    }
+  },
+  {
+    '$set': {
+      'latest_relaunch_date': {
+        '$cond': [
+          {
+            '$and': [
+              {
+                '$ne': [
+                  '$max_product_in',
+                  None
+                ]
+              },
+              {
+                '$gte': [
+                  '$max_product_in',
+                  {
+                    '$cond': [
+                      {
+                        '$eq': [
+                          '$max_product_out',
+                          None
+                        ]
+                      },
+                      '2020-01-01',
+                      '$max_product_out'
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            '$toDate': '$max_product_in'
+          },
+          None
+        ]
+      },
+      'end_date': {
+        '$cond': [
+          {
+            '$and': [
+              {
+                '$ne': [
+                  '$latest_relaunch_date',
+                  None
+                ]
+              },
+              {
+                '$gt': [
+                  {
+                    '$toDate': '2025-04-27'
+                  },
+                  '$latest_relaunch_date'
+                ]
+              }
+            ]
+          },
+          {
+            '$toDate': '2025-04-27'
+          },
+          None
+        ]
+      }
+    }
+  },
+  {
+    '$set': {
+      'lifespan': {
+        '$cond': [
+          {
+            '$or': [
+              {
+                '$eq': [
+                  '$daily_end_date',
+                  None
+                ]
+              },
+              {
+                '$eq': [
+                  '$latest_relaunch_date',
+                  None
+                ]
+              },
+              {
+                '$eq': [
+                  '$end_date',
+                  None
+                ]
+              },
+              {
+                '$gt': [
+                  '$latest_relaunch_date',
+                  '$end_date'
+                ]
+              }
+            ]
+          },
+          -1,
+          {
+            '$divide': [
+              {
+                '$subtract': [
+                  '$end_date',
+                  '$latest_relaunch_date'
+                ]
+              },
+              86400000
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    '$unwind': '$category'
+  },
+  {
+    '$unwind': '$daily_information'
+  },
+  {
+    '$set': {
+      'start_price': {
+        '$cond': [
+          {
+            '$eq': [
+              '$daily_information.date',
+              '2025-04-21'
+            ]
+          },
+          '$daily_information.EUR.actual_price',
+          0
+        ]
+      },
+      'start_count': {
+        '$cond': [
+          {
+            '$eq': [
+              '$daily_information.date',
+              '2025-04-21'
+            ]
+          },
+          1,
+          0
+        ]
+      },
+      'end_price': {
+        '$cond': [
+          {
+            '$eq': [
+              '$daily_information.date',
+              '2025-04-27'
+            ]
+          },
+          '$daily_information.EUR.actual_price',
+          0
+        ]
+      },
+      'end_count': {
+        '$cond': [
+          {
+            '$eq': [
+              '$daily_information.date',
+              '2025-04-27'
+            ]
+          },
+          1,
+          0
+        ]
+      },
+      'sum_price': '$daily_information.EUR.actual_price',
+      'sum_orig_price': '$daily_information.EUR.original_price',
+      'sum_actual_price': '$daily_information.EUR.actual_price',
+      'date': '$daily_information.date',
+      'sum_disc_actual_price': {
+        '$cond': [
+          {
+            '$gt': [
+              '$daily_information.EUR.original_price',
+              '$daily_information.EUR.actual_price'
+            ]
+          },
+          '$daily_information.EUR.actual_price',
+          0
+        ]
+      },
+      'sum_disc_orig_price': {
+        '$cond': [
+          {
+            '$gt': [
+              '$daily_information.EUR.original_price',
+              '$daily_information.EUR.actual_price'
+            ]
+          },
+          '$daily_information.EUR.original_price',
+          0
+        ]
+      },
+      'valid_size_count': {
+        '$cond': [
+          {
+            '$gte': [
+              '$daily_information.available_size',
+              0
+            ]
+          },
+          1,
+          0
+        ]
+      },
+      'days_on_web': '$daily_information.days_on_web',
+      'days_full_price': '$daily_information.days_full_price',
+      'eco': {
+        '$cond': [
+          '$eco',
+          1,
+          0
+        ]
+      },
+      'non_eco': {
+        '$cond': [
+          '$eco',
+          0,
+          1
+        ]
+      },
+      'pattern': {
+        '$cond': [
+          '$pattern',
+          1,
+          0
+        ]
+      },
+      'solid': {
+        '$cond': [
+          '$pattern',
+          0,
+          1
+        ]
+      },
+      'available_size': '$daily_information.available_size',
+      'unavailable_size': '$daily_information.unavailable_size',
+      'discount_products': {
+        '$cond': [
+          {
+            '$gt': [
+              '$daily_information.EUR.original_price',
+              '$daily_information.EUR.actual_price'
+            ]
+          },
+          1,
+          0
+        ]
+      },
+      'not_discount_products': {
+        '$cond': [
+          {
+            '$gt': [
+              '$daily_information.EUR.original_price',
+              '$daily_information.EUR.actual_price'
+            ]
+          },
+          0,
+          1
+        ]
+      },
+      'sold_out': {
+        '$cond': [
+          {
+            '$eq': [
+              {
+                '$add': [
+                  '$daily_information.available_size',
+                  '$daily_information.unavailable_size'
+                ]
+              },
+              0
+            ]
+          },
+          0,
+          {
+            '$divide': [
+              '$daily_information.unavailable_size',
+              {
+                '$add': [
+                  '$daily_information.available_size',
+                  '$daily_information.unavailable_size'
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    '$group': {
+      '_id': {
+        'vendor': '$seller.vendor',
+        'region': '$seller.region',
+        'category': '$category'
+      },
+      'currency': {
+        '$first': '$currency'
+      },
+      'dates': {
+        '$addToSet': '$date'
+      },
+      'peer_options': {
+        '$sum': '$daily_information.peer_options'
+      },
+      'count': {
+        '$sum': 1
+      },
+      'unique_dhash': {
+        '$addToSet': {
+          'dhash': '$_id',
+          'lifespan': {
+            '$cond': {
+              'if': {
+                '$gt': [
+                  '$lifespan',
+                  -1
+                ]
+              },
+              'then': '$lifespan',
+              'else': 0
+            }
+          },
+          'num': {
+            '$cond': {
+              'if': {
+                '$gt': [
+                  '$lifespan',
+                  -1
+                ]
+              },
+              'then': 1,
+              'else': 0
+            }
+          }
+        }
+      },
+      'available_size': {
+        '$sum': '$available_size'
+      },
+      'days_full_price': {
+        '$sum': '$days_full_price'
+      },
+      'days_on_web': {
+        '$sum': '$days_on_web'
+      },
+      'discount_products': {
+        '$sum': '$discount_products'
+      },
+      'eco': {
+        '$sum': '$eco'
+      },
+      'end_count': {
+        '$sum': '$end_count'
+      },
+      'end_price': {
+        '$sum': '$end_price'
+      },
+      'lifespan': {
+        '$sum': '$lifespan'
+      },
+      'non_eco': {
+        '$sum': '$non_eco'
+      },
+      'not_discount_products': {
+        '$sum': '$not_discount_products'
+      },
+      'out_stock': {
+        '$sum': '$out_stock'
+      },
+      'pattern': {
+        '$sum': '$pattern'
+      },
+      'sold_out': {
+        '$sum': '$sold_out'
+      },
+      'solid': {
+        '$sum': '$solid'
+      },
+      'start_count': {
+        '$sum': '$start_count'
+      },
+      'start_price': {
+        '$sum': '$start_price'
+      },
+      'sum_actual_price': {
+        '$sum': '$sum_actual_price'
+      },
+      'sum_disc_actual_price': {
+        '$sum': '$sum_disc_actual_price'
+      },
+      'sum_disc_orig_price': {
+        '$sum': '$sum_disc_orig_price'
+      },
+      'sum_orig_price': {
+        '$sum': '$sum_orig_price'
+      },
+      'sum_price': {
+        '$sum': '$sum_price'
+      },
+      'unavailable_size': {
+        '$sum': '$unavailable_size'
+      },
+      'valid_size_count': {
+        '$sum': '$valid_size_count'
+      }
+    }
+  },
+  {
+    '$set': {
+      'vendor': '$_id.vendor',
+      'region': '$_id.region',
+      'category': '$_id.category',
+      '_id': None,
+      'unique_count': {
+        '$size': '$unique_dhash'
+      },
+      'lifespan_sum': {
+        '$reduce': {
+          'input': '$unique_dhash',
+          'initialValue': 0,
+          'in': {
+            '$add': [
+              '$$value',
+              '$$this.lifespan'
+            ]
+          }
+        }
+      },
+      'lifespan_count': {
+        '$reduce': {
+          'input': '$unique_dhash',
+          'initialValue': 0,
+          'in': {
+            '$add': [
+              '$$value',
+              '$$this.num'
+            ]
+          }
+        }
+      },
+      'unique_dhash': None
+    }
+  }
+]

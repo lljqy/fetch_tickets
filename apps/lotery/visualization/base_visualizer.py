@@ -1,23 +1,24 @@
 from collections import Counter
 from typing import List, Dict, Any
+from abc import ABC, abstractmethod
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from dlt_rules import RuleEngine
+from core.rules import RuleEngine
 
 # 设置中文字体
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 
-class DLTVisualizer:
-    """大乐透数据可视化"""
+class BaseVisualizer(ABC):
+    """彩票可视化基类"""
 
-    def __init__(self, draws: List[Dict[str, Any]]):
+    def __init__(self, draws: List[Dict[str, Any]], front_range: range, back_range: range):
         self.draws = draws
-        self.front_range = range(1, 36)
-        self.back_range = range(1, 12)
+        self.front_range = front_range
+        self.back_range = back_range
 
     def plot_number_frequency(self, figsize=(15, 10)):
         """绘制号码出现频率图"""
@@ -34,8 +35,8 @@ class DLTVisualizer:
         front_nums = list(self.front_range)
         front_freqs = [front_counter.get(num, 0) for num in front_nums]
 
-        ax1.bar(front_nums, front_freqs, color='skyblue', alpha=0.7)
-        ax1.set_title('前区号码出现频率', fontsize=14, fontweight='bold')
+        ax1.bar(front_nums, front_freqs, color=self.get_front_color(), alpha=0.7)
+        ax1.set_title(f'前区{self.get_front_name()}出现频率', fontsize=14, fontweight='bold')
         ax1.set_xlabel('号码')
         ax1.set_ylabel('出现次数')
         ax1.grid(True, alpha=0.3)
@@ -44,8 +45,8 @@ class DLTVisualizer:
         back_nums = list(self.back_range)
         back_freqs = [back_counter.get(num, 0) for num in back_nums]
 
-        ax2.bar(back_nums, back_freqs, color='lightcoral', alpha=0.7)
-        ax2.set_title('后区号码出现频率', fontsize=14, fontweight='bold')
+        ax2.bar(back_nums, back_freqs, color=self.get_back_color(), alpha=0.7)
+        ax2.set_title(f'后区{self.get_back_name()}出现频率', fontsize=14, fontweight='bold')
         ax2.set_xlabel('号码')
         ax2.set_ylabel('出现次数')
         ax2.grid(True, alpha=0.3)
@@ -63,15 +64,15 @@ class DLTVisualizer:
         issues = [d["issue"] for d in self.draws]
 
         # 前区和值趋势
-        ax1.plot(issues, front_sums, 'o-', color='blue', linewidth=2, markersize=6)
-        ax1.set_title('前区和值趋势', fontsize=14, fontweight='bold')
+        ax1.plot(issues, front_sums, 'o-', color=self.get_front_color(), linewidth=2, markersize=6)
+        ax1.set_title(f'前区{self.get_front_name()}和值趋势', fontsize=14, fontweight='bold')
         ax1.set_xlabel('期号')
         ax1.set_ylabel('和值')
         ax1.grid(True, alpha=0.3)
 
         # 后区和值趋势
-        ax2.plot(issues, back_sums, 'o-', color='green', linewidth=2, markersize=6)
-        ax2.set_title('后区和值趋势', fontsize=14, fontweight='bold')
+        ax2.plot(issues, back_sums, 'o-', color=self.get_back_color(), linewidth=2, markersize=6)
+        ax2.set_title(f'后区{self.get_back_name()}和值趋势', fontsize=14, fontweight='bold')
         ax2.set_xlabel('期号')
         ax2.set_ylabel('和值')
         ax2.grid(True, alpha=0.3)
@@ -79,8 +80,7 @@ class DLTVisualizer:
         plt.tight_layout()
         return fig
 
-    def analyze_rule_compliance(self, recommendations: List[Dict[str, List[int]]], rule_engine: RuleEngine) -> Dict[
-        str, List[Dict[str, Any]]]:
+    def analyze_rule_compliance(self, recommendations: List[Dict[str, List[int]]], rule_engine: RuleEngine) -> List[Dict[str, Any]]:
         """
         分析推荐号码的规则符合性
         :param recommendations: 推荐号码列表
@@ -242,18 +242,18 @@ class DLTVisualizer:
         rec_back_sums = [sum(rec["back"]) for rec in recommendations]
 
         # 前区和值分布对比
-        ax1.hist(front_sums, bins=15, alpha=0.6, color='lightblue', label='历史数据', density=True)
-        ax1.hist(rec_front_sums, bins=5, alpha=0.8, color='red', label='推荐号码', density=True)
-        ax1.set_title('前区和值分布对比', fontweight='bold')
+        ax1.hist(front_sums, bins=15, alpha=0.6, color='lightcoral', label='历史数据', density=True)
+        ax1.hist(rec_front_sums, bins=5, alpha=0.8, color=self.get_front_color(), label='推荐号码', density=True)
+        ax1.set_title(f'前区{self.get_front_name()}和值分布对比', fontweight='bold')
         ax1.set_xlabel('和值')
         ax1.set_ylabel('密度')
         ax1.legend()
         ax1.grid(True, alpha=0.3)
 
         # 后区和值分布对比
-        ax2.hist(back_sums, bins=10, alpha=0.6, color='lightgreen', label='历史数据', density=True)
-        ax2.hist(rec_back_sums, bins=3, alpha=0.8, color='red', label='推荐号码', density=True)
-        ax2.set_title('后区和值分布对比', fontweight='bold')
+        ax2.hist(back_sums, bins=10, alpha=0.6, color='lightblue', label='历史数据', density=True)
+        ax2.hist(rec_back_sums, bins=3, alpha=0.8, color=self.get_back_color(), label='推荐号码', density=True)
+        ax2.set_title(f'后区{self.get_back_name()}和值分布对比', fontweight='bold')
         ax2.set_xlabel('和值')
         ax2.set_ylabel('密度')
         ax2.legend()
@@ -288,3 +288,69 @@ class DLTVisualizer:
 
         plt.tight_layout()
         return fig
+
+    def plot_number_distribution(self, figsize=(15, 8)):
+        """绘制号码分布图"""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+
+        # 统计每个号码的出现次数
+        front_counter = Counter()
+        back_counter = Counter()
+        for d in self.draws:
+            front_counter.update(d["front"])
+            back_counter.update(d["back"])
+
+        # 前区号码分布
+        front_nums = list(self.front_range)
+        front_freqs = [front_counter.get(num, 0) for num in front_nums]
+        
+        # 按频率排序
+        sorted_front = sorted(zip(front_nums, front_freqs), key=lambda x: x[1], reverse=True)
+        top_front_nums, top_front_freqs = zip(*sorted_front[:10])
+        
+        ax1.bar(range(len(top_front_nums)), top_front_freqs, color=self.get_front_color(), alpha=0.7)
+        ax1.set_title(f'前区{self.get_front_name()}出现频率TOP10', fontweight='bold')
+        ax1.set_xlabel('号码')
+        ax1.set_ylabel('出现次数')
+        ax1.set_xticks(range(len(top_front_nums)))
+        ax1.set_xticklabels(top_front_nums)
+        ax1.grid(True, alpha=0.3)
+
+        # 后区号码分布
+        back_nums = list(self.back_range)
+        back_freqs = [back_counter.get(num, 0) for num in back_nums]
+        
+        # 按频率排序
+        sorted_back = sorted(zip(back_nums, back_freqs), key=lambda x: x[1], reverse=True)
+        top_back_nums, top_back_freqs = zip(*sorted_back[:8])
+        
+        ax2.bar(range(len(top_back_nums)), top_back_freqs, color=self.get_back_color(), alpha=0.7)
+        ax2.set_title(f'后区{self.get_back_name()}出现频率TOP8', fontweight='bold')
+        ax2.set_xlabel('号码')
+        ax2.set_ylabel('出现次数')
+        ax2.set_xticks(range(len(top_back_nums)))
+        ax2.set_xticklabels(top_back_nums)
+        ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+        return fig
+
+    @abstractmethod
+    def get_front_color(self) -> str:
+        """获取前区颜色，子类必须实现"""
+        pass
+
+    @abstractmethod
+    def get_back_color(self) -> str:
+        """获取后区颜色，子类必须实现"""
+        pass
+
+    @abstractmethod
+    def get_front_name(self) -> str:
+        """获取前区名称，子类必须实现"""
+        pass
+
+    @abstractmethod
+    def get_back_name(self) -> str:
+        """获取后区名称，子类必须实现"""
+        pass 
